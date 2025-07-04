@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python/
+env/
+venv/
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Environment variables
+.env
+
+# Output folder
+output/
+
+# OS generated files
+.DS_Store
+Thumbs.db

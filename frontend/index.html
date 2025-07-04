@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en"> <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NDVI Analysis</title> <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="map"></div>
+    <div class="controls">
+        <h1>NDVI Field Analysis</h1> <p>Draw a polygon on the map and analyze NDVI evolution.</p> <div class="input-group">
+            <label for="startDate">From Date:</label> <input type="date" id="startDate" required>
+        </div>
+        <div class="input-group">
+            <label for="endDate">To Date:</label> <input type="date" id="endDate" required>
+        </div>
+        <div class="input-group">
+            <label for="frequency">Frequency:</label> <select id="frequency">
+                <option value="monthly">Monthly</option> <option value="weekly">Weekly</option> </select>
+            <small>How often images should be collected for the time series (max 1 year).</small> </div>
+
+        <button id="processNdviBtn">Process NDVI</button> <div id="statusMessage"></div>
+        <div id="downloadLinkContainer"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
