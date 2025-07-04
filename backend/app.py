@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, send_file
 import os
 from datetime import datetime
-from processing import process_ndvi, calculate_polygon_area_sqkm
+from .processing import process_ndvi, calculate_polygon_area_sqkm
 import logging
 from flask_cors import CORS
 
