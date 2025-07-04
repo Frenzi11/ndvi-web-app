@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, send_file
 import os
 from datetime import datetime
 # Import our function and helper function (process_ndvi now returns date and PDF path)
-from processing import process_ndvi, calculate_polygon_area_sqkm
+from .processing import process_ndvi, calculate_polygon_area_sqkm
 import logging
 from flask_cors import CORS # Important for CORS
 
