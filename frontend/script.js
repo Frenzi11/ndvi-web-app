@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Define "base maps" for the layer switching control
     const baseMaps = {
         "OpenStreetMap": osmLayer,
-        "Satellite Imagery (Esri)": esriSatLayer // Translated layer name
+        "Satellite Imagery (Esri)": esriSatLayer
     };
 
     // Add layer switching control to the map
@@ -68,18 +68,18 @@ document.addEventListener('DOMContentLoaded', () => {
         drawnItems.addLayer(layer);
         currentPolygon = layer;
         updateStatus('');
-        console.log('Polygon drawn:', layer.toGeoJSON()); // Translated console log
+        console.log('Polygon drawn:', layer.toGeoJSON());
     });
 
     map.on(L.Draw.Event.EDITED, function (event) {
         updateStatus('');
-        console.log('Polygon edited:', currentPolygon.toGeoJSON()); // Translated console log
+        console.log('Polygon edited:', currentPolygon.toGeoJSON());
     });
 
     map.on(L.Draw.Event.DELETED, function (event) {
         currentPolygon = null;
         updateStatus('');
-        console.log('Polygon deleted.'); // Translated console log
+        console.log('Polygon deleted.');
     });
 
     const KM_PER_DEGREE = 111; // Approximately 111 km per degree
@@ -104,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusMessage = document.getElementById('statusMessage');
     const downloadLinkContainer = document.getElementById('downloadLinkContainer');
     
-    // New date and frequency inputs
+    // Nové inputy pro datumy a frekvenci
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
     const frequencySelect = document.getElementById('frequency');
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
         statusMessage.className = `status ${type}`;
     }
 
-    // Set default dates (today and one year ago)
+    // Nastavení defaultních dat (dnešek a rok zpět)
     const today = new Date();
     const oneYearAgo = new Date(today);
     oneYearAgo.setFullYear(today.getFullYear() - 1);
@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     processBtn.addEventListener('click', async () => {
         if (!currentPolygon) {
-            updateStatus('Please draw a polygon on the map first.', 'error'); // Translated status message
+            updateStatus('Please draw a polygon on the map first.', 'error');
             return;
         }
 
@@ -134,24 +134,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const approxArea = getApproximatePolygonArea(currentPolygon.getLatLngs()[0]);
         if (approxArea > MAX_FRONTEND_AREA_ESTIMATE_SQKM) {
-             updateStatus(`Polygon is too large (estimated area: ${approxArea.toFixed(2)} km²). Max allowed frontend estimation is ${MAX_FRONTEND_AREA_ESTIMATE_SQKM} km².`, 'error'); // Translated status message
+             updateStatus(`Polygon is too large (estimated area: ${approxArea.toFixed(2)} km²). Max allowed frontend estimation is ${MAX_FRONTEND_AREA_ESTIMATE_SQKM} km².`, 'error');
              return;
         }
 
-        // Get values from new inputs
+        // Získáváme hodnoty z nových inputů
         const startDate = startDateInput.value;
         const endDate = endDateInput.value;
         const frequency = frequencySelect.value;
         
-        // Basic date validation
+        // Základní validace datumu
         if (!startDate || !endDate || new Date(startDate) > new Date(endDate)) {
-            updateStatus('Please enter valid dates (From Date <= To Date).', 'error'); // Translated status message
+            updateStatus('Please enter valid dates (From Date <= To Date).', 'error');
             return;
         }
 
-        updateStatus('Processing data, please wait...', ''); // Translated status message
+        updateStatus('Processing data, please wait...', '');
         processBtn.disabled = true;
-        downloadLinkContainer.innerHTML = ''; // Clear previous links
+        downloadLinkContainer.innerHTML = ''; // Vymaže předchozí odkazy
 
         try {
             const response = await fetch('http://127.0.0.1:5000/process-ndvi', {
@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 let statusText = `${message}`;
                 if (imageDate) {
-                    statusText += ` Map data from: ${imageDate}`; // Translated status message
+                    statusText += ` Map data from: ${imageDate}`;
                 }
                 updateStatus(statusText, 'success');
                 
@@ -186,7 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const fullDownloadUrlTiff = `http://127.0.0.1:5000${fileUrlTiff}`; 
                     const downloadLinkTiff = document.createElement('a');
                     downloadLinkTiff.href = fullDownloadUrlTiff;
-                    downloadLinkTiff.textContent = 'Download NDVI GeoTIFF'; // Translated link text
+                    downloadLinkTiff.textContent = 'Download NDVI GeoTIFF';
                     downloadLinkTiff.download = fileUrlTiff.split('/').pop();
                     downloadLinkContainer.appendChild(downloadLinkTiff);
                     downloadLinkContainer.appendChild(document.createElement('br'));
@@ -196,17 +196,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     const fullDownloadUrlPdf = `http://127.0.0.1:5000${fileUrlPdf}`; 
                     const downloadLinkPdf = document.createElement('a');
                     downloadLinkPdf.href = fullDownloadUrlPdf;
-                    downloadLinkPdf.textContent = 'Download NDVI Report (PDF)'; // Translated link text
+                    downloadLinkPdf.textContent = 'Download NDVI Report (PDF)';
                     downloadLinkPdf.download = fileUrlPdf.split('/').pop();
                     downloadLinkContainer.appendChild(downloadLinkPdf);
                 }
 
             } else {
-                updateStatus(`Error: ${result.error || 'Unknown error'}`, 'error'); // Translated status message
+                updateStatus(`Error: ${result.error || 'Unknown error'}`, 'error');
             }
         } catch (error) {
-            console.error('An error occurred during backend communication:', error); // Translated console error
-            updateStatus('Error communicating with backend. Check console.', 'error'); // Translated status message
+            console.error('An error occurred during backend communication:', error);
+            updateStatus('Error communicating with backend. Check console.', 'error');
         } finally {
             processBtn.disabled = false;
         }
