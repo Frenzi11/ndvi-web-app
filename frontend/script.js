@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
         downloadLinkContainer.innerHTML = ''; // Vymaže předchozí odkazy
 
         try {
-            const response = await fetch('http://127.0.0.1:5000/process-ndvi', {
+            const response = await fetch('/process-ndvi', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
