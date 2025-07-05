@@ -12,19 +12,19 @@ from shapely.geometry import Polygon
 import math
 import sys
 
-# NEW IMPORTS FOR PDF GENERATION
+# NOVÉ IMPORTY PRO PDF GENERACI
 import matplotlib
-matplotlib.use('Agg') # Set non-interactive backend
+matplotlib.use('Agg') # Nastaví neinteraktivní backend
 import matplotlib.pyplot as plt
 from fpdf import FPDF
 import io
 from matplotlib.colors import LinearSegmentedColormap
-import pandas as pd 
+import pandas as pd # Pro práci s datovými řadami
 
-# Moved to the top of the file
+# Přesunuto na začátek souboru
 from rasterio.transform import from_bounds
-import unicodedata # NEW IMPORT: For text sanitization (removing diacritics)
-from PIL import Image # NEW IMPORT FOR GETTING PNG DIMENSIONS
+import unicodedata # NOVÝ IMPORT: Pro sanitizaci textu (odstranění diakritiky)
+from PIL import Image # NOVÝ IMPORT PRO ZJIŠTĚNÍ ROZMĚRŮ PNG
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -34,10 +34,10 @@ CDSE_CLIENT_ID = os.getenv("CDSE_CLIENT_ID")
 CDSE_CLIENT_SECRET = os.getenv("CDSE_CLIENT_SECRET")
 
 if not all([CDSE_CLIENT_ID, CDSE_CLIENT_SECRET]):
-    logging.error("Missing environment variables for CDSE (CDSE_CLIENT_ID/SECRET). Check .env file.") # Translated log message
+    logging.error("Missing environment variables for CDSE (CDSE_CLIENT_ID/SECRET). Check .env file.")
     raise ValueError("Missing CDSE API keys in .env file.")
 
-# Set Sentinel Hub configuration for CDSE
+# Nastavení Sentinel Hub konfigurace pro CDSE
 _GLOBAL_CDSE_CONFIG = SHConfig()
 _GLOBAL_CDSE_CONFIG.sh_client_id = CDSE_CLIENT_ID
 _GLOBAL_CDSE_CONFIG.sh_client_secret = CDSE_CLIENT_SECRET
@@ -47,7 +47,7 @@ _GLOBAL_CDSE_CONFIG.sh_auth_base_url = "https://identity.dataspace.copernicus.eu
 
 print(f"Using Python executable: {sys.executable}")
 print(f"Python sys.path: {sys.path}")
-logging.info(f"Global SHConfig Base URL: {_GLOBAL_CDSE_CONFIG.sh_base_url}") # Translated log message
+logging.info(f"Global SHConfig Base URL: {_GLOBAL_CDSE_CONFIG.sh_base_url}")
 
 catalog = SentinelHubCatalog(config=_GLOBAL_CDSE_CONFIG)
 
@@ -58,30 +58,27 @@ DataCollection.define(
 )
 S2_CDSE_CUSTOM = DataCollection.SENTINEL2_L1C_CDSE_CUSTOM
 
-# ----- NEW FUNCTION: To create a PDF report -----
+# ----- NOVÁ FUNKCE: Pro vytvoření PDF reportu -----
 def _create_ndvi_pdf(ndvi_array: np.ndarray, image_date: str, output_folder: str, timestamp: str, time_series_plot_path: str | None = None) -> str:
     """
-    Creates a PDF with NDVI image visualization and date, optionally with a time-series plot.
+    Vytvoří PDF s vizualizací NDVI snímku a datem, volitelně s grafem časové řady.
     """
     pdf = FPDF(unit="mm", format="A4")
     pdf.add_page()
-    # CHANGE: Set Arial as default font for certainty
     pdf.set_font("Arial", size=12) 
 
-    # Function for sanitizing text (removing diacritics)
+    # Funkce pro sanitizaci textu (definována lokálně)
     def _sanitize_text_for_pdf(text: str) -> str:
-        # Converts Unicode characters to their ASCII equivalents and removes those without equivalent
-        # This ensures fpdf will not have issues with diacritics (even though it removes them)
         normalized_text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('utf-8')
         return normalized_text
         
-    # Title
+    # Titulek
     pdf.set_xy(10, 10)
-    pdf.set_font("Arial", "B", 16) # Use Arial Bold
-    pdf.cell(0, 10, _sanitize_text_for_pdf("NDVI Analysis"), 0, 1, "C") # Translated text
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, _sanitize_text_for_pdf("NDVI Analysis"), 0, 1, "C")
     pdf.ln(5)
 
-    # 1. Image: Time Series Plot (if available)
+    # 1. Obrázek: Časová řada (pokud existuje)
     if time_series_plot_path:
         ts_plot_width = 190 # mm
         
@@ -92,18 +89,20 @@ def _create_ndvi_pdf(ndvi_array: np.ndarray, image_date: str, output_folder: str
 
         pdf.image(time_series_plot_path, x=10, y=30, w=ts_plot_width, h=ts_plot_height)
         pdf.ln(ts_plot_height + 5) 
-        pdf.set_font("Arial", "", 10) # Font for plot label
-        pdf.cell(0, 10, _sanitize_text_for_pdf("NDVI Evolution Over Time"), 0, 1, "C") # Translated text
+        pdf.set_font("Arial", "", 10)
+        pdf.cell(0, 10, _sanitize_text_for_pdf("NDVI Evolution Over Time"), 0, 1, "C")
         pdf.ln(5)
     else:
-        pdf.ln(20) # More space if no time series plot
+        pdf.ln(20)
 
 
-    # --- NEW PAGE FOR NDVI MAP ---
+    # --- NOVÁ STRÁNKA PRO NDVI MAPU ---
     pdf.add_page()
 
-    # 2. Image: NDVI Map
-    fig_map, ax_map = plt.subplots(figsize=(8.27 * 1.5, 11.69 * 1.8), dpi=100) # More space!
+    # 2. Obrázek: NDVI mapa
+    # ZMENA: Snížili jsme figsize a DPI pro mapu, abychom šetřili paměť na Renderu.
+    # To by mělo vygenerovat menší PNG.
+    fig_map, ax_map = plt.subplots(figsize=(8.27 * 0.8, 11.69 * 0.8), dpi=75) # Sníženo figsize a DPI
     ax_map.set_axis_off() 
 
     norm_map = plt.Normalize(vmin=np.min(ndvi_array), vmax=np.max(ndvi_array))
@@ -112,7 +111,7 @@ def _create_ndvi_pdf(ndvi_array: np.ndarray, image_date: str, output_folder: str
     im_map = ax_map.imshow(ndvi_array, cmap=cmap_map, norm=norm_map)
 
     cbar_map = fig_map.colorbar(im_map, ax=ax_map, orientation='horizontal', shrink=0.6, pad=0.08)
-    cbar_map.set_label('NDVI Value', rotation=0, labelpad=5) # Translated label
+    cbar_map.set_label('NDVI Value', rotation=0, labelpad=5) 
     
     current_min_map = np.min(ndvi_array)
     current_max_map = np.max(ndvi_array)
@@ -141,45 +140,43 @@ def _create_ndvi_pdf(ndvi_array: np.ndarray, image_date: str, output_folder: str
     plt.close(fig_map)
 
 
-    # --- Save map to temporary PNG file ---
+    # --- Uložení mapy do dočasného souboru PNG ---
     temp_map_png_path = os.path.join(output_folder, f"temp_ndvi_map_{timestamp}.png")
     with open(temp_map_png_path, 'wb') as f:
         f.write(buf_map.getvalue())
     buf_map.close()
 
 
-    # Place map in PDF
+    # Umístění mapy v PDF
     actual_png_width_px, actual_png_height_px = 0, 0
     try:
         with Image.open(temp_map_png_path) as img:
             actual_png_width_px, actual_png_height_px = img.size
     except Exception as e:
-        logging.error(f"ERROR: Could not load PNG to determine dimensions: {e}. Using estimate.") # Translated log message
-        actual_png_width_px = 100 * (8.27 * 1.5) 
-        actual_png_height_px = 100 * (11.69 * 1.8)
+        logging.error(f"ERROR: Could not load PNG to determine dimensions: {e}. Using estimate.")
+        actual_png_width_px = 100 * (8.27 * 0.8) 
+        actual_png_height_px = 100 * (11.69 * 0.8)
     
-    logging.info(f"PNG Map Image Actual Dimensions: {actual_png_width_px}px x {actual_png_height_px}px") # Translated log message
+    logging.info(f"PNG Map Image Actual Dimensions: {actual_png_width_px}px x {actual_png_height_px}px") 
     
     map_aspect_ratio_actual_png = actual_png_height_px / actual_png_width_px
 
-    pdf_map_width = 190 # Target width of map in PDF (mm)
-    pdf_map_height = pdf_map_width * map_aspect_ratio_actual_png # Height based on actual PNG aspect ratio
+    pdf_map_width = 190 # Cílová šířka mapy v PDF (v mm)
+    pdf_map_height = pdf_map_width * map_aspect_ratio_actual_png 
 
-    logging.info(f"PDF Map Image Target Dimensions: {pdf_map_width}mm x {pdf_map_height}mm") # Translated log message
+    logging.info(f"PDF Map Image Target Dimensions: {pdf_map_width}mm x {pdf_map_height}mm")
 
-    map_start_y_mm = 20 
+    map_start_y_mm = 20 # Pevná Y pozice pro mapu na nové stránce
     
     pdf.image(temp_map_png_path, x=(210 - pdf_map_width) / 2, y=map_start_y_mm, w=pdf_map_width, h=pdf_map_height, type='png')
 
-    # Add frame around map
     pdf.rect((210 - pdf_map_width) / 2, map_start_y_mm, pdf_map_width, pdf_map_height)
 
     pdf.set_y(map_start_y_mm + pdf_map_height) 
     
-    # Add date below map
     pdf.ln(5)
-    pdf.set_font("Arial", "", 10) # Font for map label
-    pdf.cell(0, 10, _sanitize_text_for_pdf(f"NDVI map from: {image_date}"), 0, 1, "C") # Translated text
+    pdf.set_font("Arial", "", 10)
+    pdf.cell(0, 10, _sanitize_text_for_pdf(f"NDVI map from: {image_date}"), 0, 1, "C")
     pdf.ln(5)
 
 
@@ -187,7 +184,6 @@ def _create_ndvi_pdf(ndvi_array: np.ndarray, image_date: str, output_folder: str
     pdf_path = os.path.join(output_folder, f"ndvi_report_{timestamp}.pdf")
     pdf.output(pdf_path)
 
-    # --- IMPORTANT: Delete temporary PNG files ---
     os.remove(temp_map_png_path)
     if time_series_plot_path:
         os.remove(time_series_plot_path)
@@ -198,13 +194,13 @@ def calculate_polygon_area_sqkm(polygon_coords: list) -> float:
     """
     Calculates the approximate area of a polygon in km^2.
     Uses a simple approximation for small polygons on Earth (Earth's radius).
-    """ # Translated docstring
+    """
     if not polygon_coords or len(polygon_coords) < 3:
         return 0.0
     try:
         polygon_shape = Polygon(polygon_coords)
     except Exception as e:
-        logging.error(f"Error creating Shapely polygon: {e}") # Translated log message
+        logging.error(f"Error creating Shapely polygon: {e}")
         return 0.0
     centroid_lat = polygon_shape.centroid.y
     lat_rad = math.radians(centroid_lat)
@@ -217,23 +213,21 @@ def calculate_polygon_area_sqkm(polygon_coords: list) -> float:
         approx_projected_polygon = Polygon(approx_projected_coords)
         return approx_projected_polygon.area
     except Exception as e:
-        logging.error(f"Error calculating area of approximated polygon: {e}") # Translated log message
+        logging.error(f"Error calculating area of approximated polygon: {e}")
         return 0.0
 
-# CHANGE SIGNATURE: Now accepts start_date_str, end_date_str, frequency
 def process_ndvi(
     polygon_coords: list,
     start_date_str: str,
     end_date_str: str,
-    frequency: str, # e.g., 'monthly', 'weekly'
+    frequency: str,
     max_images_to_consider: int = 30,
     max_polygon_area_sqkm: float = 25.0
-) -> tuple[str, str, str] | None: # Returns GeoTIFF path, main_image_date, and PDF path
+) -> tuple[str, str, str] | None:
     """
     Processes NDVI for a given polygon and time period, downloading from CDSE via Sentinel Hub API.
     Selects the image with the least cloud cover and generates a time series.
-    """ # Translated docstring
-    # CHANGE: evalscript_bands definition moved inside function
+    """
     evalscript_bands = """
         //VERSION=3
         function setup() {
@@ -265,42 +259,39 @@ def process_ndvi(
         }
     """
 
-    FIXED_MAX_CLOUD_COVERAGE = 0.8 # CHANGE: Allow up to 80% cloudiness for time series.
+    FIXED_MAX_CLOUD_COVERAGE = 0.8 # Allow up to 80% cloudiness for time series.
 
-    logging.info(f"Starting NDVI processing for polygon: {polygon_coords}, from {start_date_str} to {end_date_str} frequency: {frequency} (CDSE mode with cloudiness {FIXED_MAX_CLOUD_COVERAGE*100}%)") # Translated log message
+    logging.info(f"Starting NDVI processing for polygon: {polygon_coords}, from {start_date_str} to {end_date_str} frequency: {frequency} (CDSE mode with cloudiness {FIXED_MAX_CLOUD_COVERAGE*100}%)")
 
     current_catalog = catalog
     current_config = _GLOBAL_CDSE_CONFIG
 
-    logging.info(f"process_ndvi: SHConfig Base URL used: {current_config.sh_base_url}") # Translated log message
-    logging.info(f"process_ndvi: SHConfig Token URL used: {current_config.sh_token_url}") # Translated log message
+    logging.info(f"process_ndvi: SHConfig Base URL used: {current_config.sh_base_url}")
+    logging.info(f"process_ndvi: SHConfig Token URL used: {current_config.sh_token_url}")
 
 
     area = calculate_polygon_area_sqkm(polygon_coords)
     if area > max_polygon_area_sqkm:
-        raise ValueError(f"Polygon area ({area:.2f} km²) exceeds maximum allowed size ({max_polygon_area_sqkm} km²).") # Translated error message
+        raise ValueError(f"Polygon area ({area:.2f} km²) exceeds maximum allowed size ({max_polygon_area_sqkm} km²).")
 
-    # Convert string dates to datetime objects
     start_date_dt = datetime.strptime(start_date_str, '%Y-%m-%d').date()
     end_date_dt = datetime.strptime(end_date_str, '%Y-%m-%d').date()
 
-    # ----- NEW STEP: Time Series Length Validation -----
     MAX_DURATION_DAYS = 365 # Max 1 year
     MAX_TS_IMAGES = 50 # Max 50 images in time series
     
     if (end_date_dt - start_date_dt).days > MAX_DURATION_DAYS:
-        raise ValueError(f"Maximum time series length is limited to {MAX_DURATION_DAYS} days (1 year).") # Translated error message
+        raise ValueError(f"Maximum time series length is limited to {MAX_DURATION_DAYS} days (1 year).")
 
-    # ----- NEW STEP: Generate time series intervals -----
     time_series_intervals = []
     if frequency == 'weekly':
         current_interval_start = start_date_dt
         while current_interval_start <= end_date_dt:
-            current_interval_end = current_interval_start + timedelta(days=6) # Weekly interval
+            current_interval_end = current_interval_start + timedelta(days=6)
             if current_interval_end > end_date_dt:
                 current_interval_end = end_date_dt
             time_series_intervals.append((current_interval_start.strftime('%Y-%m-%d'), current_interval_end.strftime('%Y-%m-%d')))
-            current_interval_start += timedelta(days=7) # Move to next week
+            current_interval_start += timedelta(days=7)
     elif frequency == 'monthly':
         current_interval_start = start_date_dt
         while current_interval_start <= end_date_dt:
@@ -313,10 +304,10 @@ def process_ndvi(
             time_series_intervals.append((current_interval_start.strftime('%Y-%m-%d'), current_interval_end.strftime('%Y-%m-%d')))
             current_interval_start = current_interval_end + timedelta(days=1)
     else:
-        raise ValueError("Unsupported frequency. Use 'weekly' or 'monthly'.") # Translated error message
+        raise ValueError("Unsupported frequency. Use 'weekly' or 'monthly'.")
 
     if len(time_series_intervals) > MAX_TS_IMAGES:
-        raise ValueError(f"Number of images in time series ({len(time_series_intervals)}) exceeds limit {MAX_TS_IMAGES}. Shorten period or change frequency.") # Translated error message
+        raise ValueError(f"Number of images in time series ({len(time_series_intervals)}) exceeds limit {MAX_TS_IMAGES}. Shorten period or change frequency.")
 
 
     min_lon = min(p[0] for p in polygon_coords)
@@ -326,21 +317,18 @@ def process_ndvi(
     bbox = BBox(bbox=[min_lon, min_lat, max_lon, max_lat], crs=CRS.WGS84)
     size = bbox_to_dimensions(bbox, resolution=10)
 
-    # IMPORTANT: output_folder_path and timestamp must be defined HERE, before using for temp_ts_plot_path
     output_folder_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
     if not os.path.exists(output_folder_path):
         os.makedirs(output_folder_path)
-    timestamp = datetime.now().strftime("%Y%m%d%H%M%S") # Create timestamp only once
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
     ndvi_time_series_data = []
     best_image_for_map = None
     best_cloud_cover_for_map = 101.0
 
-    # ----- NEW STEP: Loop through time intervals -----
     for ts_start_str, ts_end_str in time_series_intervals:
-        logging.info(f"Searching for images for interval: from {ts_start_str} to {ts_end_str}") # Translated log message
+        logging.info(f"Searching for images for interval: from {ts_start_str} to {ts_end_str}")
         
-        # 1. Step: Search for the best image in the given sub-interval
         search_iterator = current_catalog.search(
             S2_CDSE_CUSTOM,
             bbox=bbox,
@@ -351,20 +339,18 @@ def process_ndvi(
 
         results = list(search_iterator)
         if not results:
-            logging.warning(f"No images found for criteria in CDSE catalog for interval {ts_start_str} - {ts_end_str}. Skipping.") # Translated log message
+            logging.warning(f"No images found for criteria in CDSE catalog for interval {ts_start_str} - {ts_end_str}. Skipping.")
             ndvi_time_series_data.append((ts_start_str, np.nan))
             continue
 
         sorted_results = sorted(results, key=lambda x: (x['properties']['eo:cloud_cover'], x['properties']['datetime']), reverse=False)
         best_image_metadata_ts = sorted_results[0]
-        logging.info(f"  Image selected for TS: {best_image_metadata_ts['id']} (cloudiness: {best_image_metadata_ts['properties']['eo:cloud_cover']:.2f}%)") # Translated log message
+        logging.info(f"  Image selected for TS: {best_image_metadata_ts['id']} (cloudiness: {best_image_metadata_ts['properties']['eo:cloud_cover']:.2f}%)")
 
-        # For the map, we select the overall cleanest image from the entire time series
         if best_image_metadata_ts['properties']['eo:cloud_cover'] < best_cloud_cover_for_map:
             best_cloud_cover_for_map = best_image_metadata_ts['properties']['eo:cloud_cover']
             best_image_for_map = best_image_metadata_ts
         
-        # 2. Step: Download data for the selected time series image
         selected_time_range_ts = (best_image_metadata_ts['properties']['datetime'][:10], best_image_metadata_ts['properties']['datetime'][:10])
 
         request_ts = SentinelHubRequest(
@@ -388,12 +374,12 @@ def process_ndvi(
         try:
             data_ts = request_ts.get_data()
         except Exception as e:
-            logging.error(f"Error downloading data for {ts_start_str}: {e}. Skipping.") # Translated log message
+            logging.error(f"Error downloading data for {ts_start_str}: {e}. Skipping.")
             ndvi_time_series_data.append((ts_start_str, np.nan))
             continue
         
         if not data_ts:
-            logging.warning(f"No image data downloaded for TS image {ts_start_str}. Skipping.") # Translated log message
+            logging.warning(f"No image data downloaded for TS image {ts_start_str}. Skipping.")
             ndvi_time_series_data.append((ts_start_str, np.nan))
             continue
 
@@ -402,18 +388,15 @@ def process_ndvi(
         nir_band_data_ts = single_image_data_ts['B08.tif']
 
         if red_band_data_ts is None or nir_band_data_ts is None:
-            logging.warning(f"Downloaded TS image {ts_start_str} contains empty data. Skipping.") # Translated log message
+            logging.warning(f"Downloaded TS image {ts_start_str} contains empty data. Skipping.")
             ndvi_time_series_data.append((ts_start_str, np.nan))
             continue
         
-        # 3. Step: Calculate NDVI for the time series image
         ndvi_ts = (nir_band_data_ts.astype(float) - red_band_data_ts.astype(float)) / \
                   (nir_band_data_ts.astype(float) + red_band_data_ts.astype(float))
         ndvi_ts = np.clip(ndvi_ts, -1.0, 1.0)
         ndvi_ts = np.nan_to_num(ndvi_ts, nan=0.0)
 
-        # Aggregation: Average NDVI for the polygon (ignoring 0 values that came from NaN)
-        # Use dataMask == 1 to calculate NDVI only for valid data pixels
         data_mask_ts = single_image_data_ts['dataMask.tif']
         valid_ndvi_pixels = ndvi_ts[data_mask_ts == 1]
         
@@ -421,37 +404,31 @@ def process_ndvi(
             mean_ndvi = np.mean(valid_ndvi_pixels)
         else:
             mean_ndvi = np.nan
-            logging.warning(f"No valid pixels in mask for {ts_start_str}. Average NDVI is NaN.") # Translated log message
+            logging.warning(f"No valid pixels in mask for {ts_start_str}. Average NDVI is NaN.")
 
         ndvi_time_series_data.append((best_image_metadata_ts['properties']['datetime'][:10], mean_ndvi))
-    # ----- End of loop through time intervals -----
+    
+    logging.info(f"Number of data points for time series: {len(ndvi_time_series_data)}")
+    logging.info(f"Time series data (first 5 and last 5): {ndvi_time_series_data[:5]} ... {ndvi_time_series_data[-5:]}")
 
-    # ----- NEW DEBUGGING LINES (Check time series data) -----
-    logging.info(f"Number of data points for time series: {len(ndvi_time_series_data)}") # Translated log message
-    logging.info(f"Time series data (first 5 and last 5): {ndvi_time_series_data[:5]} ... {ndvi_time_series_data[-5:]}") # Translated log message
-    # --- END OF NEW DEBUGGING LINES -----
-
-    # ----- NEW STEP: Create NDVI time series plot -----
     ts_dates = [pd.to_datetime(d[0]) for d in ndvi_time_series_data]
     ts_values = [d[1] for d in ndvi_time_series_data]
 
     fig_ts, ax_ts = plt.subplots(figsize=(10, 5), dpi=100)
     ax_ts.plot(ts_dates, ts_values, marker='o', linestyle='-', color='green')
-    ax_ts.set_title('NDVI Evolution Over Time') # Translated title
-    ax_ts.set_xlabel('Date') # Translated label
-    ax_ts.set_ylabel('Average NDVI') # Translated label
+    ax_ts.set_title('NDVI Evolution Over Time')
+    ax_ts.set_xlabel('Date')
+    ax_ts.set_ylabel('Average NDVI')
     ax_ts.grid(True)
-    fig_ts.autofmt_xdate() # Format X-axis dates
+    fig_ts.autofmt_xdate()
 
-    # Save plot to temporary PNG file
     temp_ts_plot_path = os.path.join(output_folder_path, f"temp_ndvi_timeseries_{timestamp}.png")
     plt.tight_layout()
     plt.savefig(temp_ts_plot_path, format='png', bbox_inches='tight', pad_inches=0)
     plt.close(fig_ts)
 
-    # Main NDVI map (use data from the cleanest image found for the map)
     if not best_image_for_map:
-        logging.warning("No suitable image found for NDVI map within the time series.") # Translated log message
+        logging.warning("No suitable image found for NDVI map within the time series.")
         return None
 
     selected_time_range_map = (best_image_for_map['properties']['datetime'][:10], best_image_for_map['properties']['datetime'][:10])
@@ -477,11 +454,11 @@ def process_ndvi(
     try:
         data_map = request_map.get_data()
     except Exception as e:
-        logging.error(f"Error downloading data for main map: {e}.") # Translated log message
+        logging.error(f"Error downloading data for main map: {e}.")
         return None
     
     if not data_map:
-        logging.warning("No image data downloaded for main NDVI map.") # Translated log message
+        logging.warning("No image data downloaded for main NDVI map.")
         return None
     
     single_image_data_map = data_map[0]
@@ -489,16 +466,14 @@ def process_ndvi(
     nir_band_data_map = single_image_data_map['B08.tif']
 
     if red_band_data_map is None or nir_band_data_map is None:
-        logging.warning(f"Main map image contains empty data.") # Translated log message
+        logging.warning(f"Main map image contains empty data.")
         return None
 
-    # Calculate NDVI for the main map
     ndvi_map = (nir_band_data_map.astype(float) - red_band_data_map.astype(float)) / \
                (nir_band_data_map.astype(float) + red_band_data_map.astype(float))
     ndvi_map = np.clip(ndvi_map, -1.0, 1.0)
     ndvi_map = np.nan_to_num(ndvi_map, nan=0.0)
 
-    # Save main NDVI GeoTIFF (as before)
     out_path = os.path.join(output_folder_path, f"ndvi_result_{timestamp}.tif")
     
     profile_base_map = {
@@ -514,11 +489,10 @@ def process_ndvi(
     profile_ndvi_map.update({'nodata': 0.0})
     with rasterio.open(out_path, 'w', **profile_ndvi_map) as dst:
         dst.write(ndvi_map.astype('float32'), 1)
-    logging.info(f"NDVI GeoTIFF file successfully saved to {out_path}") # Translated log message
+    logging.info(f"NDVI GeoTIFF file successfully saved to {out_path}")
 
-    # NEW STEP: Create PDF report, now with time series plot
     pdf_path = _create_ndvi_pdf(ndvi_map, best_image_for_map['properties']['datetime'][:10], output_folder_path, timestamp, time_series_plot_path=temp_ts_plot_path)
-    logging.info(f"NDVI PDF report successfully saved to {pdf_path}") # Translated log message
+    logging.info(f"NDVI PDF report successfully saved to {pdf_path}")
 
     return out_path, best_image_for_map['properties']['datetime'][:10], pdf_path
 
@@ -531,7 +505,7 @@ if __name__ == '__main__':
         [18.448, 49.792],
         [18.435, 49.792]
     ]
-    print("Running NDVI time series test (CDSE mode)...") # Translated message
+    print("Running NDVI time series test (CDSE mode)...")
     try:
         end_date = date.today().strftime('%Y-%m-%d')
         start_date = (date.today() - timedelta(days=180)).strftime('%Y-%m-%d')
@@ -540,12 +514,12 @@ if __name__ == '__main__':
         
         if result_tuple:
             out_path, image_date, pdf_path = result_tuple
-            print(f"NDVI GeoTIFF successfully created: {out_path}") # Translated message
-            print(f"NDVI PDF report successfully created: {pdf_path}") # Translated message
+            print(f"NDVI GeoTIFF successfully created: {out_path}")
+            print(f"NDVI PDF report successfully created: {pdf_path}")
         else:
-            print("NDVI time series processing not completed.") # Translated message
+            print("NDVI time series processing not completed.")
     except ValueError as e:
-        print(f"Error processing time series: {e}") # Translated message
+        print(f"Error processing time series: {e}")
     except Exception as e:
-        logging.exception("An unexpected error occurred during CDSE time series processing.") # Translated message
-        print(f"An unexpected error occurred during CDSE time series processing: {e}") # Translated message
+        logging.exception("An unexpected error occurred during CDSE time series processing.")
+        print(f"An unexpected error occurred during CDSE time series processing: {e}")
