@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, send_from_directory
 import os
 from datetime import datetime
 from .processing import process_ndvi, calculate_polygon_area_sqkm
@@ -22,7 +22,7 @@ MAX_IMAGES_TO_CONSIDER = 30
 # NOVÁ CESTA: Servírování hlavní stránky (index.html)
 @app.route('/')
 def serve_index():
-    return send_file('index.html')
+    return send_from_directory(app.static_folder, 'index.html')
 
 @app.route('/process-ndvi', methods=['POST'])
 def handle_process_ndvi():
