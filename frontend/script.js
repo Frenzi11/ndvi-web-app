@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
         downloadLinkContainer.innerHTML = ''; // Vymaže předchozí odkazy
 
         try {
-            const response = await fetch('/process-ndvi', {
+            const response = await fetch('/process-ndvi', { // KLÍČOVÉ: Zde používáme relativní URL
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -183,7 +183,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const fileUrlPdf = result.pdfUrl;
 
                 if (fileUrlTiff) {
-                    const fullDownloadUrlTiff = `http://127.0.0.1:5000${fileUrlTiff}`; 
+                    // KLÍČOVÁ ZMĚNA ZDE: Nyní již NEpřidáváme "http://127.0.0.1:5000", protože Flask server už servíruje frontend ze stejné domény
+                    const fullDownloadUrlTiff = fileUrlTiff; 
                     const downloadLinkTiff = document.createElement('a');
                     downloadLinkTiff.href = fullDownloadUrlTiff;
                     downloadLinkTiff.textContent = 'Download NDVI GeoTIFF';
@@ -193,7 +194,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (fileUrlPdf) {
-                    const fullDownloadUrlPdf = `http://127.0.0.1:5000${fileUrlPdf}`; 
+                    // KLÍČOVÁ ZMĚNA ZDE: Nyní již NEpřidáváme "http://127.0.0.1:5000", protože Flask server už servíruje frontend ze stejné domény
+                    const fullDownloadUrlPdf = fileUrlPdf; 
                     const downloadLinkPdf = document.createElement('a');
                     downloadLinkPdf.href = fullDownloadUrlPdf;
                     downloadLinkPdf.textContent = 'Download NDVI Report (PDF)';
