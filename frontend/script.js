@@ -24,6 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add layer switching control to the map
     L.control.layers(baseMaps).addTo(map);
 
+    L.control.scale().addTo(map);
+
+
 
     // Layer group for drawing
     const drawnItems = new L.FeatureGroup();
