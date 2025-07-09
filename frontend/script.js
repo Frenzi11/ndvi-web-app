@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     });
 
-    // NEW: Orthophoto layer (Esri World Imagery)
+    // Orthophoto layer (Esri World Imagery)
     const esriSatLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
     });
@@ -114,13 +114,21 @@ document.addEventListener('DOMContentLoaded', () => {
         statusMessage.className = `status ${type}`;
     }
 
-    // Nastavení defaultních dat (dnešek a rok zpět)
+    // Nastavení defaultních dat (dnešek a rok zpět) a limitů pro výběr
     const today = new Date();
+    const sentinelLaunchDate = new Date('2015-06-23'); // Datum spuštění Sentinel-2A
+
     const oneYearAgo = new Date(today);
     oneYearAgo.setFullYear(today.getFullYear() - 1);
 
+    // Nastavení výchozích hodnot inputů
     startDateInput.value = oneYearAgo.toISOString().split('T')[0];
     endDateInput.value = today.toISOString().split('T')[0];
+
+    // NOVÉ ŘÁDKY: Nastavení limitů pro datumové inputy
+    startDateInput.min = sentinelLaunchDate.toISOString().split('T')[0]; // Od kdy lze vybírat start date
+    endDateInput.min = sentinelLaunchDate.toISOString().split('T')[0];   // End date nemůže být dříve než launch date
+    endDateInput.max = today.toISOString().split('T')[0];                 // End date nemůže být později než dnes
 
 
     processBtn.addEventListener('click', async () => {
@@ -143,18 +151,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const endDate = endDateInput.value;
         const frequency = frequencySelect.value;
         
-        // Základní validace datumu
-        if (!startDate || !endDate || new Date(startDate) > new Date(endDate)) {
+        // Rozšířená validace datumu
+        const selectedStartDate = new Date(startDate);
+        const selectedEndDate = new Date(endDate);
+        const todayDateOnly = new Date(today.toISOString().split('T')[0]); 
+        const sentinelLaunchDateOnly = new Date(sentinelLaunchDate.toISOString().split('T')[0]);
+
+        if (!startDate || !endDate || selectedStartDate > selectedEndDate) {
             updateStatus('Please enter valid dates (From Date <= To Date).', 'error');
+            return;
+        }
+        if (selectedStartDate < sentinelLaunchDateOnly) {
+            updateStatus(`From Date cannot be earlier than Sentinel-2 launch date (${sentinelLaunchDateOnly.toISOString().split('T')[0]}).`, 'error');
+            return;
+        }
+        if (selectedEndDate > todayDateOnly) {
+            updateStatus(`To Date cannot be later than today (${todayDateOnly.toISOString().split('T')[0]}).`, 'error');
             return;
         }
 
         updateStatus('Processing data, please wait...', '');
         processBtn.disabled = true;
-        downloadLinkContainer.innerHTML = ''; // Vymaže předchozí odkazy
+        downloadLinkContainer.innerHTML = ''; // Clear previous links
 
         try {
-            const response = await fetch('/process-ndvi', { // KLÍČOVÉ: Zde používáme relativní URL
+            const response = await fetch('/process-ndvi', { // Using relative URL
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -183,7 +204,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const fileUrlPdf = result.pdfUrl;
 
                 if (fileUrlTiff) {
-                    // KLÍČOVÁ ZMĚNA ZDE: Nyní již NEpřidáváme "http://127.0.0.1:5000", protože Flask server už servíruje frontend ze stejné domény
                     const fullDownloadUrlTiff = fileUrlTiff; 
                     const downloadLinkTiff = document.createElement('a');
                     downloadLinkTiff.href = fullDownloadUrlTiff;
@@ -194,7 +214,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (fileUrlPdf) {
-                    // KLÍČOVÁ ZMĚNA ZDE: Nyní již NEpřidáváme "http://127.0.0.1:5000", protože Flask server už servíruje frontend ze stejné domény
                     const fullDownloadUrlPdf = fileUrlPdf; 
                     const downloadLinkPdf = document.createElement('a');
                     downloadLinkPdf.href = fullDownloadUrlPdf;

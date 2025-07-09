@@ -10,11 +10,9 @@
     <div id="map"></div>
     <div class="controls">
         <h1>NDVI Field Analysis</h1> <p>Draw a polygon on the map and analyze NDVI evolution.</p> <div class="input-group">
-            <label for="startDate">From Date:</label> <input type="date" id="startDate" required>
-        </div>
+            <label for="startDate">From Date:</label> <input type="date" id="startDate" required min="2015-06-23"> </div>
         <div class="input-group">
-            <label for="endDate">To Date:</label> <input type="date" id="endDate" required>
-        </div>
+            <label for="endDate">To Date:</label> <input type="date" id="endDate" required> </div>
         <div class="input-group">
             <label for="frequency">Frequency:</label> <select id="frequency">
                 <option value="monthly">Monthly</option> <option value="weekly">Weekly</option> </select>
