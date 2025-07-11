@@ -10,4 +10,3 @@ python-dotenv==1.1.0
 geopandas==1.0.1
 matplotlib==3.8.2
 gunicorn==22.0.0
-matplotlib-scalebar==0.4.2
