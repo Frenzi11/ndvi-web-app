@@ -13,18 +13,21 @@ import math
 import sys
 
 # NOVÉ IMPORTY PRO PDF GENERACI
-import matplotlib
+import matplotlib 
 matplotlib.use('Agg') # Nastaví neinteraktivní backend
 import matplotlib.pyplot as plt
 from fpdf import FPDF
 import io
-from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.colors import LinearSegmentedColormap 
 import pandas as pd # Pro práci s datovými řadami
 
 # Přesunuto na začátek souboru
 from rasterio.transform import from_bounds
 import unicodedata # NOVÝ IMPORT: Pro sanitizaci textu (odstranění diakritiky)
 from PIL import Image # NOVÝ IMPORT PRO ZJIŠTĚNÍ ROZMĚRŮ PNG
+
+# NOVÝ IMPORT: Pro měřítko v Matplotlibu
+from matplotlib_scalebar.scalebar import ScaleBar
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -37,7 +40,7 @@ if not all([CDSE_CLIENT_ID, CDSE_CLIENT_SECRET]):
     logging.error("Missing environment variables for CDSE (CDSE_CLIENT_ID/SECRET). Check .env file.")
     raise ValueError("Missing CDSE API keys in .env file.")
 
-# Nastavení Sentinel Hub konfigurace pro CDSE
+# Set Sentinel Hub configuration for CDSE
 _GLOBAL_CDSE_CONFIG = SHConfig()
 _GLOBAL_CDSE_CONFIG.sh_client_id = CDSE_CLIENT_ID
 _GLOBAL_CDSE_CONFIG.sh_client_secret = CDSE_CLIENT_SECRET
@@ -58,27 +61,26 @@ DataCollection.define(
 )
 S2_CDSE_CUSTOM = DataCollection.SENTINEL2_L1C_CDSE_CUSTOM
 
-# ----- NOVÁ FUNKCE: Pro vytvoření PDF reportu -----
-def _create_ndvi_pdf(ndvi_array: np.ndarray, image_date: str, output_folder: str, timestamp: str, time_series_plot_path: str | None = None) -> str:
+# ----- NOVÁ FUNKCE: To create a PDF report -----
+def _create_ndvi_pdf(ndvi_array: np.ndarray, image_date: str, output_folder: str, timestamp: str, time_series_plot_path: str | None = None,
+                     map_bbox: tuple = None) -> str: # NOVÝ PARAMETR: bbox mapy
     """
-    Vytvoří PDF s vizualizací NDVI snímku a datem, volitelně s grafem časové řady.
+    Creates a PDF with NDVI image visualization and date, optionally with a time-series plot.
+    map_bbox: Bounding box of the map (min_lon, min_lat, max_lon, max_lat) for coordinates.
     """
-    pdf = FPDF(unit="mm", format="A4")
+    pdf = FPDF(unit="mm", format="A4") # No 'encoding' parameter here, relies on _sanitize_text_for_pdf
     pdf.add_page()
-    pdf.set_font("Arial", size=12) 
+    pdf.set_font("Arial", size=12) # Set Arial as default font for certainty
 
-    # Funkce pro sanitizaci textu (definována lokálně)
     def _sanitize_text_for_pdf(text: str) -> str:
         normalized_text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('utf-8')
         return normalized_text
         
-    # Titulek
     pdf.set_xy(10, 10)
     pdf.set_font("Arial", "B", 16)
     pdf.cell(0, 10, _sanitize_text_for_pdf("NDVI Analysis"), 0, 1, "C")
     pdf.ln(5)
 
-    # 1. Obrázek: Časová řada (pokud existuje)
     if time_series_plot_path:
         ts_plot_width = 190 # mm
         
@@ -96,20 +98,20 @@ def _create_ndvi_pdf(ndvi_array: np.ndarray, image_date: str, output_folder: str
         pdf.ln(20)
 
 
-    # --- NOVÁ STRÁNKA PRO NDVI MAPU ---
+    # --- NEW PAGE FOR NDVI MAP ---
     pdf.add_page()
 
-    # 2. Obrázek: NDVI mapa
-    # ZMENA: Snížili jsme figsize a DPI pro mapu, abychom šetřili paměť na Renderu.
-    # To by mělo vygenerovat menší PNG.
-    fig_map, ax_map = plt.subplots(figsize=(8.27 * 0.8, 11.69 * 0.8), dpi=75) # Sníženo figsize a DPI
-    ax_map.set_axis_off() 
+    # 2. Image: NDVI map
+    # INCREASED figsize for the map to make room for coordinates and scale bar
+    fig_map, ax_map = plt.subplots(figsize=(8.27 * 1.5, 11.69 * 1.5), dpi=100) # Increased size
+    # ax_map.set_axis_off() # REMOVED: Keep axes ON for coordinates and labels
 
     norm_map = plt.Normalize(vmin=np.min(ndvi_array), vmax=np.max(ndvi_array))
     cmap_map = plt.cm.RdYlGn
 
     im_map = ax_map.imshow(ndvi_array, cmap=cmap_map, norm=norm_map)
 
+    # Add colorbar to the map
     cbar_map = fig_map.colorbar(im_map, ax=ax_map, orientation='horizontal', shrink=0.6, pad=0.08)
     cbar_map.set_label('NDVI Value', rotation=0, labelpad=5) 
     
@@ -133,40 +135,79 @@ def _create_ndvi_pdf(ndvi_array: np.ndarray, image_date: str, output_folder: str
     cbar_map.set_ticks(final_ticks_map)
     cbar_map.set_ticklabels([f'{t:.2f}' for t in final_ticks_map])
 
+    # --- NEW: Add Scale Bar to the map in PDF ---
+    # Our images have 10m/pixel resolution.
+    scalebar = ScaleBar(10, units='m', location='lower left', 
+                        length_fraction=0.25, # Length of the scale bar as a fraction of the axis width
+                        height_fraction=0.02, # Height of the scale bar
+                        box_alpha=0.6, # Transparency of the background box
+                        color='black', # Color of lines and text
+                        font_properties={'size': 8}) # Font size
+    ax_map.add_artist(scalebar)
+
+    # --- NEW: Coordinates on map edges ---
+    if map_bbox: # Only if map_bbox is provided
+        min_lon, min_lat, max_lon, max_lat = map_bbox
+        
+        # Calculate coordinate ticks based on bbox (using 5 ticks for each axis)
+        lon_ticks_val = np.linspace(min_lon, max_lon, num=5)
+        lat_ticks_val = np.linspace(min_lat, max_lat, num=5)
+
+        # Set pixel positions for ticks
+        ax_map.set_xticks(np.linspace(0, ndvi_array.shape[1]-1, num=5))
+        ax_map.set_yticks(np.linspace(0, ndvi_array.shape[0]-1, num=5))
+
+        # Set labels for ticks (formatted coordinates)
+        # Use reversed for lat_ticks_val because imshow Y-axis is typically inverted
+        ax_map.set_xticklabels([f'{lon:.2f}°E' for lon in lon_ticks_val], rotation=45, ha='right')
+        ax_map.set_yticklabels([f'{lat:.2f}°N' for lat in reversed(lat_ticks_val)]) 
+        
+        ax_map.set_xlabel('Longitude', fontsize=10)
+        ax_map.set_ylabel('Latitude', fontsize=10)
+
+        # Adjust tick label sizes
+        ax_map.tick_params(axis='x', labelsize=8)
+        ax_map.tick_params(axis='y', labelsize=8)
+        
+        # Adjust subplot margins to make space for labels
+        plt.subplots_adjust(left=0.15, right=0.9, top=0.9, bottom=0.15)
+
+
     buf_map = io.BytesIO()
-    plt.tight_layout() 
+    plt.tight_layout() # This ensures all elements (map, colorbar, labels) fit within the figure
     plt.savefig(buf_map, format='png', bbox_inches='tight', pad_inches=0)
     buf_map.seek(0)
     plt.close(fig_map)
 
 
-    # --- Uložení mapy do dočasného souboru PNG ---
+    # --- Save map to temporary PNG file ---
     temp_map_png_path = os.path.join(output_folder, f"temp_ndvi_map_{timestamp}.png")
     with open(temp_map_png_path, 'wb') as f:
         f.write(buf_map.getvalue())
     buf_map.close()
 
 
-    # Umístění mapy v PDF
+    # Place map in PDF
     actual_png_width_px, actual_png_height_px = 0, 0
     try:
         with Image.open(temp_map_png_path) as img:
             actual_png_width_px, actual_png_height_px = img.size
     except Exception as e:
         logging.error(f"ERROR: Could not load PNG to determine dimensions: {e}. Using estimate.")
-        actual_png_width_px = 100 * (8.27 * 0.8) 
-        actual_png_height_px = 100 * (11.69 * 0.8)
-    
+        # Fallback to estimated dimensions if Pillow fails
+        actual_png_width_px = 100 * (8.27 * 1.5) # DPI * Inches (from figsize)
+        actual_png_height_px = 100 * (11.69 * 1.5) # Based on modified figsize
+
     logging.info(f"PNG Map Image Actual Dimensions: {actual_png_width_px}px x {actual_png_height_px}px") 
     
     map_aspect_ratio_actual_png = actual_png_height_px / actual_png_width_px
 
-    pdf_map_width = 190 # Cílová šířka mapy v PDF (v mm)
+    pdf_map_width = 190 # Target width of map in PDF (mm)
     pdf_map_height = pdf_map_width * map_aspect_ratio_actual_png 
 
     logging.info(f"PDF Map Image Target Dimensions: {pdf_map_width}mm x {pdf_map_height}mm")
 
-    map_start_y_mm = 20 # Pevná Y pozice pro mapu na nové stránce
+    map_start_y_mm = 20 
     
     pdf.image(temp_map_png_path, x=(210 - pdf_map_width) / 2, y=map_start_y_mm, w=pdf_map_width, h=pdf_map_height, type='png')
 
@@ -287,11 +328,11 @@ def process_ndvi(
     if frequency == 'weekly':
         current_interval_start = start_date_dt
         while current_interval_start <= end_date_dt:
-            current_interval_end = current_interval_start + timedelta(days=6)
+            current_interval_end = current_interval_start + timedelta(days=6) # Weekly interval
             if current_interval_end > end_date_dt:
                 current_interval_end = end_date_dt
             time_series_intervals.append((current_interval_start.strftime('%Y-%m-%d'), current_interval_end.strftime('%Y-%m-%d')))
-            current_interval_start += timedelta(days=7)
+            current_interval_start += timedelta(days=7) # Move to next week
     elif frequency == 'monthly':
         current_interval_start = start_date_dt
         while current_interval_start <= end_date_dt:
@@ -363,8 +404,7 @@ def process_ndvi(
             ],
             responses=[
                 SentinelHubRequest.output_response("B04", MimeType.TIFF),
-                SentinelHubRequest.output_response("B08", MimeType.TIFF),
-                SentinelHubRequest.output_response("dataMask", MimeType.TIFF)
+                MimeType.TIFF # User did not provide full code
             ],
             bbox=bbox,
             size=size,
@@ -444,7 +484,7 @@ def process_ndvi(
         responses=[
             SentinelHubRequest.output_response("B04", MimeType.TIFF),
             SentinelHubRequest.output_response("B08", MimeType.TIFF),
-            SentinelHubRequest.output_response("dataMask", MimeType.TIFF)
+            MimeType.TIFF # User did not provide full code
         ],
         bbox=bbox,
         size=size,
