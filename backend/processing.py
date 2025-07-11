@@ -12,19 +12,19 @@ from shapely.geometry import Polygon
 import math
 import sys
 
-# NOVÉ IMPORTY PRO PDF GENERACI
+# NEW IMPORTS FOR PDF GENERATION
 import matplotlib
-matplotlib.use('Agg') # Nastaví neinteraktivní backend
+matplotlib.use('Agg') # Set non-interactive backend
 import matplotlib.pyplot as plt
 from fpdf import FPDF
 import io
 from matplotlib.colors import LinearSegmentedColormap
-import pandas as pd # Pro práci s datovými řadami
+import pandas as pd # For working with data series
 
-# Přesunuto na začátek souboru
+# Moved to the beginning of the file
 from rasterio.transform import from_bounds
-import unicodedata # NOVÝ IMPORT: Pro sanitizaci textu (odstranění diakritiky)
-from PIL import Image # NOVÝ IMPORT PRO ZJIŠTĚNÍ ROZMĚRŮ PNG
+import unicodedata # NEW IMPORT: For text sanitization (removing diacritics)
+from PIL import Image # NEW IMPORT FOR GETTING PNG DIMENSIONS
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -37,7 +37,7 @@ if not all([CDSE_CLIENT_ID, CDSE_CLIENT_SECRET]):
     logging.error("Missing environment variables for CDSE (CDSE_CLIENT_ID/SECRET). Check .env file.")
     raise ValueError("Missing CDSE API keys in .env file.")
 
-# Nastavení Sentinel Hub konfigurace pro CDSE
+# Sentinel Hub configuration for CDSE
 _GLOBAL_CDSE_CONFIG = SHConfig()
 _GLOBAL_CDSE_CONFIG.sh_client_id = CDSE_CLIENT_ID
 _GLOBAL_CDSE_CONFIG.sh_client_secret = CDSE_CLIENT_SECRET
@@ -58,27 +58,27 @@ DataCollection.define(
 )
 S2_CDSE_CUSTOM = DataCollection.SENTINEL2_L1C_CDSE_CUSTOM
 
-# ----- NOVÁ FUNKCE: Pro vytvoření PDF reportu -----
+# ----- NEW FUNCTION: For creating a PDF report -----
 def _create_ndvi_pdf(ndvi_array: np.ndarray, image_date: str, output_folder: str, timestamp: str, time_series_plot_path: str | None = None) -> str:
     """
-    Vytvoří PDF s vizualizací NDVI snímku a datem, volitelně s grafem časové řady.
+    Creates a PDF with an NDVI image visualization and date, optionally with a time series graph.
     """
     pdf = FPDF(unit="mm", format="A4")
     pdf.add_page()
     pdf.set_font("Arial", size=12) 
 
-    # Funkce pro sanitizaci textu (definována lokálně)
+    # Function for text sanitization (defined locally)
     def _sanitize_text_for_pdf(text: str) -> str:
         normalized_text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('utf-8')
         return normalized_text
         
-    # Titulek
+    # Title
     pdf.set_xy(10, 10)
     pdf.set_font("Arial", "B", 16)
     pdf.cell(0, 10, _sanitize_text_for_pdf("NDVI Analysis"), 0, 1, "C")
     pdf.ln(5)
 
-    # 1. Obrázek: Časová řada (pokud existuje)
+    # 1. Image: Time series (if exists)
     if time_series_plot_path:
         ts_plot_width = 190 # mm
         
@@ -96,13 +96,13 @@ def _create_ndvi_pdf(ndvi_array: np.ndarray, image_date: str, output_folder: str
         pdf.ln(20)
 
 
-    # --- NOVÁ STRÁNKA PRO NDVI MAPU ---
+    # --- NEW PAGE FOR NDVI MAP ---
     pdf.add_page()
 
-    # 2. Obrázek: NDVI mapa
-    # ZMENA: Snížili jsme figsize a DPI pro mapu, abychom šetřili paměť na Renderu.
-    # To by mělo vygenerovat menší PNG.
-    fig_map, ax_map = plt.subplots(figsize=(8.27 * 0.8, 11.69 * 0.8), dpi=75) # Sníženo figsize a DPI
+    # 2. Image: NDVI map
+    # CHANGE: Reduced figsize and DPI for the map to save memory on Render.
+    # This should generate a smaller PNG.
+    fig_map, ax_map = plt.subplots(figsize=(8.27 * 0.8, 11.69 * 0.8), dpi=75) # Reduced figsize and DPI
     ax_map.set_axis_off() 
 
     norm_map = plt.Normalize(vmin=np.min(ndvi_array), vmax=np.max(ndvi_array))
@@ -140,14 +140,14 @@ def _create_ndvi_pdf(ndvi_array: np.ndarray, image_date: str, output_folder: str
     plt.close(fig_map)
 
 
-    # --- Uložení mapy do dočasného souboru PNG ---
+    # --- Saving the map to a temporary PNG file ---
     temp_map_png_path = os.path.join(output_folder, f"temp_ndvi_map_{timestamp}.png")
     with open(temp_map_png_path, 'wb') as f:
         f.write(buf_map.getvalue())
     buf_map.close()
 
 
-    # Umístění mapy v PDF
+    # Positioning the map in the PDF
     actual_png_width_px, actual_png_height_px = 0, 0
     try:
         with Image.open(temp_map_png_path) as img:
@@ -161,12 +161,12 @@ def _create_ndvi_pdf(ndvi_array: np.ndarray, image_date: str, output_folder: str
     
     map_aspect_ratio_actual_png = actual_png_height_px / actual_png_width_px
 
-    pdf_map_width = 190 # Cílová šířka mapy v PDF (v mm)
+    pdf_map_width = 190 # Target width of the map in PDF (in mm)
     pdf_map_height = pdf_map_width * map_aspect_ratio_actual_png 
 
     logging.info(f"PDF Map Image Target Dimensions: {pdf_map_width}mm x {pdf_map_height}mm")
 
-    map_start_y_mm = 20 # Pevná Y pozice pro mapu na nové stránce
+    map_start_y_mm = 20 # Fixed Y position for the map on the new page
     
     pdf.image(temp_map_png_path, x=(210 - pdf_map_width) / 2, y=map_start_y_mm, w=pdf_map_width, h=pdf_map_height, type='png')
 

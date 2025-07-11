@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusMessage = document.getElementById('statusMessage');
     const downloadLinkContainer = document.getElementById('downloadLinkContainer');
     
-    // Nové inputy pro datumy a frekvenci
+    // New inputs for dates and frequency
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
     const frequencySelect = document.getElementById('frequency');
@@ -117,21 +117,21 @@ document.addEventListener('DOMContentLoaded', () => {
         statusMessage.className = `status ${type}`;
     }
 
-    // Nastavení defaultních dat (dnešek a rok zpět) a limitů pro výběr
+    // Setting default dates (today and one year back) and selection limits
     const today = new Date();
-    const sentinelLaunchDate = new Date('2015-06-23'); // Datum spuštění Sentinel-2A
+    const sentinelLaunchDate = new Date('2015-06-23'); // Sentinel-2A launch date
 
     const oneYearAgo = new Date(today);
     oneYearAgo.setFullYear(today.getFullYear() - 1);
 
-    // Nastavení výchozích hodnot inputů
+    // Setting default values for inputs
     startDateInput.value = oneYearAgo.toISOString().split('T')[0];
     endDateInput.value = today.toISOString().split('T')[0];
 
-    // NOVÉ ŘÁDKY: Nastavení limitů pro datumové inputy
-    startDateInput.min = sentinelLaunchDate.toISOString().split('T')[0]; // Od kdy lze vybírat start date
-    endDateInput.min = sentinelLaunchDate.toISOString().split('T')[0];   // End date nemůže být dříve než launch date
-    endDateInput.max = today.toISOString().split('T')[0];                 // End date nemůže být později než dnes
+    // NEW LINES: Setting limits for date inputs
+    startDateInput.min = sentinelLaunchDate.toISOString().split('T')[0]; // From when start date can be selected
+    endDateInput.min = sentinelLaunchDate.toISOString().split('T')[0];   // End date cannot be earlier than launch date
+    endDateInput.max = today.toISOString().split('T')[0];                 // End date cannot be later than today
 
 
     processBtn.addEventListener('click', async () => {
@@ -149,12 +149,12 @@ document.addEventListener('DOMContentLoaded', () => {
              return;
         }
 
-        // Získáváme hodnoty z nových inputů
+        // Getting values from new inputs
         const startDate = startDateInput.value;
         const endDate = endDateInput.value;
         const frequency = frequencySelect.value;
         
-        // Rozšířená validace datumu
+        // Extended date validation
         const selectedStartDate = new Date(startDate);
         const selectedEndDate = new Date(endDate);
         const todayDateOnly = new Date(today.toISOString().split('T')[0]); 

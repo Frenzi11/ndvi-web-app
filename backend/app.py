@@ -7,7 +7,7 @@ from flask_cors import CORS
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# ZMĚNA ZDE: Konfigurace Flask aplikace pro servírování statických souborů z 'frontend' složky
+# CHANGE HERE: Flask app configuration for serving static files from the 'frontend' folder
 app = Flask(__name__, static_folder='../frontend', static_url_path='')
 CORS(app) # Enable CORS
 
@@ -19,7 +19,7 @@ MAX_ALLOWED_POLYGON_AREA_SQKM = 25.0
 MAX_DAYS_AGO = 60
 MAX_IMAGES_TO_CONSIDER = 30
 
-# NOVÁ CESTA: Servírování hlavní stránky (index.html)
+# NEW PATH: Serving the main page (index.html)
 @app.route('/')
 def serve_index():
     return send_from_directory(app.static_folder, 'index.html')

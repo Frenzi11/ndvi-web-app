@@ -12,14 +12,14 @@ body {
 }
 
 .controls {
-    width: 350px; /* Šířka panelu s ovládacími prvky */
+    width: 350px; 
     padding: 20px;
     box-shadow: -2px 0 5px rgba(0,0,0,0.1);
     background-color: #f8f8f8;
     display: flex;
     flex-direction: column;
     gap: 15px;
-    overflow-y: auto; /* Pro případ, že bude více obsahu */
+    overflow-y: auto; 
 }
 
 .controls h1 {
