@@ -26,8 +26,6 @@ from rasterio.transform import from_bounds
 import unicodedata # NOVÝ IMPORT: Pro sanitizaci textu (odstranění diakritiky)
 from PIL import Image # NOVÝ IMPORT PRO ZJIŠTĚNÍ ROZMĚRŮ PNG
 
-# NOVÝ IMPORT: Pro měřítko v Matplotlibu
-from matplotlib_scalebar.scalebar import ScaleBar
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -135,15 +133,6 @@ def _create_ndvi_pdf(ndvi_array: np.ndarray, image_date: str, output_folder: str
     cbar_map.set_ticks(final_ticks_map)
     cbar_map.set_ticklabels([f'{t:.2f}' for t in final_ticks_map])
 
-    # --- NEW: Add Scale Bar to the map in PDF ---
-    # Our images have 10m/pixel resolution.
-    scalebar = ScaleBar(10, units='m', location='lower left', 
-                        length_fraction=0.25, # Length of the scale bar as a fraction of the axis width
-                        height_fraction=0.02, # Height of the scale bar
-                        box_alpha=0.6, # Transparency of the background box
-                        color='black', # Color of lines and text
-                        font_properties={'size': 8}) # Font size
-    ax_map.add_artist(scalebar)
 
     # --- NEW: Coordinates on map edges ---
     if map_bbox: # Only if map_bbox is provided
