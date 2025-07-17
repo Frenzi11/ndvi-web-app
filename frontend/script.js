@@ -52,13 +52,15 @@ document.addEventListener('DOMContentLoaded', () => {
         statusMessage.className = type ? `status ${type}` : ''; // Přidá class .success nebo .error
     }
 
-    // Nastavení defaultních dat (zůstává stejné)
+    // Nastavení defaultních dat a limitů
     const today = new Date();
     const oneYearAgo = new Date(today);
     oneYearAgo.setFullYear(today.getFullYear() - 1);
     startDateInput.value = oneYearAgo.toISOString().split('T')[0];
     endDateInput.value = today.toISOString().split('T')[0];
+    
     startDateInput.min = '2015-06-23';
+    startDateInput.max = today.toISOString().split('T')[0]; // <<< TADY JE TA NOVÁ ŘÁDKA
     endDateInput.max = today.toISOString().split('T')[0];
 
 
