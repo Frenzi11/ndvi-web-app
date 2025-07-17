@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, send_file, send_from_directory
 import os
 from datetime import datetime
 # Tady si importuješ tu novou, upravenou funkci
-from processing import process_ndvi, calculate_polygon_area_sqkm
+from .processing import process_ndvi, calculate_polygon_area_sqkm
 import logging
 from flask_cors import CORS
 
