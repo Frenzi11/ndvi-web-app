@@ -4,9 +4,8 @@ sentinelhub==3.11.1
 numpy==1.26.4
 rasterio==1.4.3
 Pillow==9.5.0
-fpdf==1.7.2
 pandas==2.2.0
 python-dotenv==1.1.0
-geopandas==1.0.1
 matplotlib==3.8.2
 gunicorn==22.0.0
+Shapely==2.0.4  # Přidáno místo geopandas

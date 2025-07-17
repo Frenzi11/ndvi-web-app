@@ -1,238 +1,186 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize Leaflet map
-    const map = L.map('map').setView([49.795, 18.42], 12); // Havířov, Czechia
+    // === Inicializace mapy a vrstev (zůstává stejné) ===
+    const map = L.map('map').setView([49.795, 18.42], 12); // Havířov, Česká republika
 
-    // Base map layers
     const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     });
-
-    // Orthophoto layer (Esri World Imagery)
     const esriSatLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        attribution: 'Tiles &copy; Esri &mdash; i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, a další'
     });
-
-    // Add default layer to the map (e.g., OSM)
+    
     osmLayer.addTo(map);
-
-    // Define "base maps" for the layer switching control
-    const baseMaps = {
-        "OpenStreetMap": osmLayer,
-        "Satellite Imagery (Esri)": esriSatLayer
-    };
-
-    // Add layer switching control to the map
+    const baseMaps = { "OpenStreetMap": osmLayer, "Satellite (Esri)": esriSatLayer };
     L.control.layers(baseMaps).addTo(map);
-
     L.control.scale().addTo(map);
 
-
-
-    // Layer group for drawing
+    // === Kreslení na mapě (zůstává stejné) ===
     const drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
-
-    // Leaflet.Draw controls
     const drawControl = new L.Control.Draw({
-        edit: {
-            featureGroup: drawnItems,
-            poly: {
-                allowIntersection: false
-            }
-        },
-        draw: {
-            polyline: false,
-            marker: false,
-            circlemarker: false,
-            circle: false,
-            rectangle: false,
-            polygon: {
-                allowIntersection: false,
-                showArea: true,
-                drawError: {
-                    color: '#b00b00',
-                    message: 'Oh snap! Intersections not allowed!'
-                },
-                shapeOptions: {
-                    color: '#3388ff'
-                }
-            }
+        edit: { featureGroup: drawnItems, poly: { allowIntersection: false } },
+        draw: { polyline: false, marker: false, circlemarker: false, circle: false, rectangle: false, 
+            polygon: { allowIntersection: false, showArea: true, shapeOptions: { color: '#3388ff' } }
         }
     });
     map.addControl(drawControl);
-
     let currentPolygon = null;
-
-    map.on(L.Draw.Event.CREATED, function (event) {
-        const layer = event.layer;
-        if (currentPolygon) {
-            drawnItems.removeLayer(currentPolygon);
-        }
-        drawnItems.addLayer(layer);
-        currentPolygon = layer;
-        updateStatus('');
-        console.log('Polygon drawn:', layer.toGeoJSON());
+    map.on(L.Draw.Event.CREATED, (event) => {
+        if (currentPolygon) drawnItems.removeLayer(currentPolygon);
+        drawnItems.addLayer(event.layer);
+        currentPolygon = event.layer;
     });
 
-    map.on(L.Draw.Event.EDITED, function (event) {
-        updateStatus('');
-        console.log('Polygon edited:', currentPolygon.toGeoJSON());
-    });
-
-    map.on(L.Draw.Event.DELETED, function (event) {
-        currentPolygon = null;
-        updateStatus('');
-        console.log('Polygon deleted.');
-    });
-
-    const KM_PER_DEGREE = 111; // Approximately 111 km per degree
-
-    function getApproximatePolygonArea(latlngs) {
-        if (latlngs.length < 3) return 0;
-        let area = 0;
-        let i, j;
-        for (i = 0, j = latlngs.length - 1; i < latlngs.length; j = i++) {
-            const x1 = latlngs[j].lng * KM_PER_DEGREE * Math.cos(latlngs[j].lat * Math.PI / 180);
-            const y1 = latlngs[j].lat * KM_PER_DEGREE;
-            const x2 = latlngs[i].lng * KM_PER_DEGREE * Math.cos(latlngs[i].lat * Math.PI / 180);
-            const y2 = latlngs[i].lat * KM_PER_DEGREE;
-            area += (x1 * y2 - x2 * y1);
-        }
-        return Math.abs(area / 2);
-    }
-
-    const MAX_FRONTEND_AREA_ESTIMATE_SQKM = 50;
-
+    // === Proměnné pro nové prvky ===
+    let ndviChart = null; // Zde bude uložen objekt grafu, abychom ho mohli zničit a překreslit
+    let activeMapLayers = []; // Zde si budeme pamatovat, které NDVI vrstvy jsou na mapě
+    
+    // === Všechny HTML elementy, se kterými budeme pracovat ===
     const processBtn = document.getElementById('processNdviBtn');
     const statusMessage = document.getElementById('statusMessage');
-    const downloadLinkContainer = document.getElementById('downloadLinkContainer');
-    
-    // New inputs for dates and frequency
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
     const frequencySelect = document.getElementById('frequency');
+    const chartContainer = document.getElementById('chartContainer');
+    const mapControlsContainer = document.getElementById('mapControls');
+    const slider = document.getElementById('layerSlider');
+    const dateLabel = document.getElementById('sliderDateLabel');
+    const legendContainer = document.getElementById('legendContainer');
 
     function updateStatus(message, type = '') {
         statusMessage.textContent = message;
-        statusMessage.className = `status ${type}`;
+        statusMessage.className = type ? `status ${type}` : ''; // Přidá class .success nebo .error
     }
 
-    // Setting default dates (today and one year back) and selection limits
+    // Nastavení defaultních dat (zůstává stejné)
     const today = new Date();
-    const sentinelLaunchDate = new Date('2015-06-23'); // Sentinel-2A launch date
-
     const oneYearAgo = new Date(today);
     oneYearAgo.setFullYear(today.getFullYear() - 1);
-
-    // Setting default values for inputs
     startDateInput.value = oneYearAgo.toISOString().split('T')[0];
     endDateInput.value = today.toISOString().split('T')[0];
-
-    // NEW LINES: Setting limits for date inputs
-    startDateInput.min = sentinelLaunchDate.toISOString().split('T')[0]; // From when start date can be selected
-    endDateInput.min = sentinelLaunchDate.toISOString().split('T')[0];   // End date cannot be earlier than launch date
-    endDateInput.max = today.toISOString().split('T')[0];                 // End date cannot be later than today
+    startDateInput.min = '2015-06-23';
+    endDateInput.max = today.toISOString().split('T')[0];
 
 
+    // === KLÍČOVÁ FUNKCE: Listener na tlačítko "Process NDVI" ===
     processBtn.addEventListener('click', async () => {
+        // Základní validace (zda je nakreslený polygon atd.)
         if (!currentPolygon) {
-            updateStatus('Please draw a polygon on the map first.', 'error');
+            updateStatus('Nejdřív prosím nakresli polygon na mapě.', 'error');
             return;
         }
-
+        const startDate = startDateInput.value;
+        const endDate = endDateInput.value;
+        if (!startDate || !endDate || new Date(startDate) > new Date(endDate)) {
+            updateStatus('Prosím zadej platná data (Od <= Do).', 'error');
+            return;
+        }
+        
+        // Zobrazíme status a zablokujeme tlačítko
+        updateStatus('Zpracovávám data, prosím čekej... Může to trvat i minutu.', 'info');
+        processBtn.disabled = true;
+        
+        // Schováme staré výsledky
+        chartContainer.style.display = 'none';
+        mapControlsContainer.style.display = 'none';
+        
         const geoJson = currentPolygon.toGeoJSON();
         const polygonCoords = geoJson.geometry.coordinates[0].map(coord => [coord[0], coord[1]]);
 
-        const approxArea = getApproximatePolygonArea(currentPolygon.getLatLngs()[0]);
-        if (approxArea > MAX_FRONTEND_AREA_ESTIMATE_SQKM) {
-             updateStatus(`Polygon is too large (estimated area: ${approxArea.toFixed(2)} km²). Max allowed frontend estimation is ${MAX_FRONTEND_AREA_ESTIMATE_SQKM} km².`, 'error');
-             return;
-        }
-
-        // Getting values from new inputs
-        const startDate = startDateInput.value;
-        const endDate = endDateInput.value;
-        const frequency = frequencySelect.value;
-        
-        // Extended date validation
-        const selectedStartDate = new Date(startDate);
-        const selectedEndDate = new Date(endDate);
-        const todayDateOnly = new Date(today.toISOString().split('T')[0]); 
-        const sentinelLaunchDateOnly = new Date(sentinelLaunchDate.toISOString().split('T')[0]);
-
-        if (!startDate || !endDate || selectedStartDate > selectedEndDate) {
-            updateStatus('Please enter valid dates (From Date <= To Date).', 'error');
-            return;
-        }
-        if (selectedStartDate < sentinelLaunchDateOnly) {
-            updateStatus(`From Date cannot be earlier than Sentinel-2 launch date (${sentinelLaunchDateOnly.toISOString().split('T')[0]}).`, 'error');
-            return;
-        }
-        if (selectedEndDate > todayDateOnly) {
-            updateStatus(`To Date cannot be later than today (${todayDateOnly.toISOString().split('T')[0]}).`, 'error');
-            return;
-        }
-
-        updateStatus('Processing data, please wait...', '');
-        processBtn.disabled = true;
-        downloadLinkContainer.innerHTML = ''; // Clear previous links
-
         try {
-            const response = await fetch('/process-ndvi', { // Using relative URL
+            // Zavoláme náš nový backend
+            const response = await fetch('/process-ndvi', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     polygon: polygonCoords,
                     startDate: startDate,
                     endDate: endDate,
-                    frequency: frequency
+                    frequency: frequencySelect.value
                 })
             });
 
             const result = await response.json();
 
+            // --- ZDE SE DĚJE TA MAGIE ---
             if (response.ok) {
-                const imageDate = result.imageDate;
-                const message = result.message;
-
-                let statusText = `${message}`;
-                if (imageDate) {
-                    statusText += ` Map data from: ${imageDate}`;
-                }
-                updateStatus(statusText, 'success');
+                updateStatus(`Zpracování dokončeno! Nalezeno ${result.imageLayers.length} snímků.`, 'success');
                 
-                const fileUrlTiff = result.fileUrl;
-                const fileUrlPdf = result.pdfUrl;
+                // 1. Zobrazíme kontejnery pro výsledky
+                chartContainer.style.display = 'block';
+                mapControlsContainer.style.display = 'block';
 
-                if (fileUrlTiff) {
-                    const fullDownloadUrlTiff = fileUrlTiff; 
-                    const downloadLinkTiff = document.createElement('a');
-                    downloadLinkTiff.href = fullDownloadUrlTiff;
-                    downloadLinkTiff.textContent = 'Download NDVI GeoTIFF';
-                    downloadLinkTiff.download = fileUrlTiff.split('/').pop();
-                    downloadLinkContainer.appendChild(downloadLinkTiff);
-                    downloadLinkContainer.appendChild(document.createElement('br'));
+                // 2. Vykreslíme graf pomocí Chart.js
+                const graphData = result.graphData.map(d => ({ x: d.date, y: d.value }));
+                const ctx = document.getElementById('ndviChart').getContext('2d');
+                if (ndviChart) {
+                    ndviChart.destroy(); // Zničíme starý graf, pokud existuje
                 }
+                ndviChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [{
+                            label: 'Průměrné NDVI',
+                            data: graphData,
+                            borderColor: 'green',
+                            backgroundColor: 'rgba(0, 255, 0, 0.1)',
+                            tension: 0.1,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: { type: 'time', time: { unit: 'month', tooltipFormat: 'dd.MM.yyyy' } },
+                            y: { title: { display: true, text: 'NDVI' }, min: -0.2, max: 1.0 }
+                        },
+                        interaction: { intersect: false, mode: 'index' }
+                    }
+                });
+                
+                // 3. Připravíme a zobrazíme vrstvy na mapě
+                // Nejdřív smažeme staré vrstvy z mapy
+                activeMapLayers.forEach(layer => map.removeLayer(layer));
+                activeMapLayers = [];
 
-                if (fileUrlPdf) {
-                    const fullDownloadUrlPdf = fileUrlPdf; 
-                    const downloadLinkPdf = document.createElement('a');
-                    downloadLinkPdf.href = fullDownloadUrlPdf;
-                    downloadLinkPdf.textContent = 'Download NDVI Report (PDF)';
-                    downloadLinkPdf.download = fileUrlPdf.split('/').pop();
-                    downloadLinkContainer.appendChild(downloadLinkPdf);
+                const imageLayers = result.imageLayers;
+                slider.max = imageLayers.length - 1;
+                slider.value = imageLayers.length - 1; // Defaultně ukážeme nejnovější snímek
+
+                function showLayer(index) {
+                    // Odstraníme aktuální vrstvu z mapy
+                    activeMapLayers.forEach(layer => map.removeLayer(layer));
+                    
+                    const layerInfo = imageLayers[index];
+                    if (layerInfo) {
+                        const layer = L.imageOverlay(layerInfo.url, layerInfo.bounds, { opacity: 0.8 });
+                        layer.addTo(map);
+                        activeMapLayers = [layer]; // Uložíme si ji jako aktivní
+                        dateLabel.textContent = layerInfo.date;
+                    }
                 }
+                
+                slider.addEventListener('input', (e) => showLayer(e.target.value));
+                showLayer(slider.value); // Zobrazíme první vrstvu
+
+                // 4. Vygenerujeme legendu
+                legendContainer.innerHTML = `
+                    <strong>NDVI Legenda</strong><br>
+                    <div style="display: flex; align-items: center; margin-top: 5px; font-size: 0.8em;">
+                        <span>-0.2</span>
+                        <span style="background: linear-gradient(to right, #d73027, #ffffbf, #1a9850); flex-grow: 1; height: 15px; margin: 0 5px; border: 1px solid #666;"></span>
+                        <span>1.0</span>
+                    </div>
+                `;
 
             } else {
-                updateStatus(`Error: ${result.error || 'Unknown error'}`, 'error');
+                updateStatus(`Chyba: ${result.error || 'Neznámá chyba z backendu.'}`, 'error');
             }
+
         } catch (error) {
-            console.error('An error occurred during backend communication:', error);
-            updateStatus('Error communicating with backend. Check console.', 'error');
+            console.error('Chyba komunikace s backendem:', error);
+            updateStatus('Chyba: Nelze se spojit se serverem. Zkontroluj konzoli.', 'error');
         } finally {
-            processBtn.disabled = false;
+            processBtn.disabled = false; // Zase povolíme tlačítko
         }
     });
 });

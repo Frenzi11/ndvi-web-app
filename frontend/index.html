@@ -1,24 +1,55 @@
 <!DOCTYPE html>
-<html lang="en"> <head>
+<html lang="en">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NDVI Analysis</title> <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <title>NDVI Analysis</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
     <link rel="stylesheet" href="style.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
 </head>
 <body>
     <div id="map"></div>
     <div class="controls">
-        <h1>NDVI Field Analysis</h1> <p>Draw a polygon on the map and analyze NDVI evolution.</p> <div class="input-group">
-            <label for="startDate">From Date:</label> <input type="date" id="startDate" required min="2015-06-23"> </div>
+        <h1>NDVI Field Analysis</h1>
+        <p>Draw a polygon on the map and analyze NDVI evolution.</p>
+        
         <div class="input-group">
-            <label for="endDate">To Date:</label> <input type="date" id="endDate" required> </div>
+            <label for="startDate">From Date:</label>
+            <input type="date" id="startDate" required min="2015-06-23">
+        </div>
         <div class="input-group">
-            <label for="frequency">Frequency:</label> <select id="frequency">
-                <option value="monthly">Monthly</option> <option value="weekly">Weekly</option> </select>
-            <small>How often images should be collected for the time series (max 1 year).</small> </div>
+            <label for="endDate">To Date:</label>
+            <input type="date" id="endDate" required>
+        </div>
+        <div class="input-group">
+            <label for="frequency">Frequency:</label>
+            <select id="frequency">
+                <option value="monthly">Monthly</option>
+                <option value="weekly">Weekly</option>
+            </select>
+            <small>How often images should be collected for the time series (max 1 year).</small>
+        </div>
 
-        <button id="processNdviBtn">Process NDVI</button> <div id="statusMessage"></div>
+        <button id="processNdviBtn">Process NDVI</button>
+        <div id="statusMessage"></div>
+
+        <div id="chartContainer" style="display: none;">
+            <h3>NDVI Evolution</h3>
+            <canvas id="ndviChart"></canvas>
+        </div>
+        
+        <div id="mapControls" style="display: none;">
+             <h3>Map Layer</h3>
+             <label for="layerSlider">Date: <span id="sliderDateLabel"></span></label>
+             <input type="range" id="layerSlider" min="0" max="0" step="1" style="width: 100%;">
+             <div id="legendContainer"></div>
+        </div>
+
         <div id="downloadLinkContainer"></div>
     </div>
 
