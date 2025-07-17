@@ -106,6 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // --- ZDE SE DĚJE TA MAGIE ---
             if (response.ok) {
+                drawnItems.clearLayers();
                 updateStatus(`Zpracování dokončeno! Nalezeno ${result.imageLayers.length} snímků.`, 'success');
                 
                 // 1. Zobrazíme kontejnery pro výsledky
