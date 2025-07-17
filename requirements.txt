@@ -8,4 +8,4 @@ pandas==2.2.0
 python-dotenv==1.1.0
 matplotlib==3.8.2
 gunicorn==22.0.0
-Shapely==2.0.4  # Přidáno místo geopandas
+Shapely==2.0.4 

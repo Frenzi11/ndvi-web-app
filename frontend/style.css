@@ -107,20 +107,17 @@ button:disabled {
     background-color: #218838;
 }
 
-/* Přidá trochu místa nad grafem a ovládáním mapy */
 #chartContainer, #mapControls {
     margin-top: 20px;
     padding-top: 15px;
-    border-top: 1px solid #ddd; /* Jemná oddělovací čára */
+    border-top: 1px solid #ddd;
 }
 
-/* Omezí maximální výšku grafu, aby nebyl přes celý ovládací panel */
 #ndviChart {
     max-height: 250px;
     margin-top: 10px;
 }
 
-/* Styly pro legendu, aby byla hezky zarovnaná */
 #legendContainer {
     margin-top: 10px;
     padding: 10px;
@@ -133,8 +130,7 @@ button:disabled {
     margin-bottom: 5px;
 }
 
-/* Přidáme styl pro informační status, který jsme si definovali v JS */
 #statusMessage.info {
-    background-color: #e2e3e5; /* Světle šedá */
-    color: #383d41; /* Tmavě šedá */
+    background-color: #e2e3e5; 
+    color: #383d41; 
 }
