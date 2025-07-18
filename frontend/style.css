@@ -217,3 +217,32 @@ button:disabled {
 .leaflet-draw-toolbar a:hover {
     background-color: #f4f4f4 !important;
 }
+
+/* --- NEW: Responsive Design for Mobile Devices --- */
+
+/* This rule applies only when the screen width is 800px or less */
+@media (max-width: 800px) {
+
+    /* Change the main layout from horizontal to vertical */
+    body {
+        flex-direction: column;
+        overflow: auto; /* Allow scrolling on mobile */
+    }
+
+    /* Make the map take up a portion of the screen height */
+    #map {
+        height: 60vh; /* 60% of the viewport height */
+        width: 100%;
+        flex-grow: 0; /* Disable flex-grow */
+    }
+
+    /* Make the controls panel take up full width */
+    .controls {
+        width: 100%;
+        height: auto; /* Height will be based on content */
+        max-height: none; /* Remove any max-height limits */
+        box-shadow: 0 -2px 5px rgba(0,0,0,0.1); /* Shadow on top now */
+        overflow-y: visible; /* Disable internal scrolling */
+        box-sizing: border-box; /* Ensure padding is included in width */
+    }
+}
