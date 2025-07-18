@@ -181,3 +181,39 @@ button:disabled {
     height: 20px;
     fill: #333;
 }
+
+.leaflet-control-zoom {
+    border: none !important; /* Remove the default container border */
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* This creates a nice space between the + and - buttons */
+}
+
+/* 2. Unified style for ALL control buttons */
+/* We target zoom buttons AND all links inside the draw toolbar */
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out,
+.leaflet-draw-toolbar a {
+    background-color: white !important;
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 4px !important;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.65) !important;
+    border: none !important;
+    line-height: 34px !important;
+}
+
+/* 3. Resetting the container for the draw buttons */
+/* This ensures the shadow is applied to the button, not its container */
+.leaflet-draw-toolbar {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+/* 4. Unified hover effect */
+.leaflet-control-zoom-in:hover,
+.leaflet-control-zoom-out:hover,
+.leaflet-draw-toolbar a:hover {
+    background-color: #f4f4f4 !important;
+}
