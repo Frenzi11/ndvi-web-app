@@ -18,7 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
     const drawControl = new L.Control.Draw({
-        edit: { featureGroup: drawnItems, poly: { allowIntersection: false } },
         draw: { polyline: false, marker: false, circlemarker: false, circle: false, rectangle: false, 
             polygon: { allowIntersection: false, showArea: true, shapeOptions: { color: '#3388ff' } }
         }
@@ -68,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
             position: 'topleft' // You can change this to 'topright', 'bottomleft', etc.
         },
         onAdd: function (map) {
-            const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+            const container = L.DomUtil.create('div', 'leaflet-control');
             const button = L.DomUtil.create('a', 'location-control-button', container);
             // SVG icon for the button (crosshair)
             button.innerHTML = `
