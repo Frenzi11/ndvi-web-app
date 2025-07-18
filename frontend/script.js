@@ -46,7 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const slider = document.getElementById('layerSlider');
     const dateLabel = document.getElementById('sliderDateLabel');
     const legendContainer = document.getElementById('legendContainer');
-    const loaderOverlay = document.getElementById('loader-overlay'); // NEW: Get the loader element
+    // MODIFIED: Get the new progress bar element instead of the old overlay
+    const progressBarContainer = document.getElementById('progress-bar-container'); 
 
     function updateStatus(message, type = '') {
         statusMessage.textContent = message;
@@ -79,10 +80,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // MODIFIED: Show loader and disable button
-        loaderOverlay.style.display = 'flex';
+        // MODIFIED: Show progress bar, disable button, and set info message
+        progressBarContainer.classList.remove('hidden');
         processBtn.disabled = true;
-        updateStatus(''); // Clear previous status messages
+        updateStatus('Processing data, please wait...', 'info');
         
         // Hide old results
         chartContainer.style.display = 'none';
@@ -183,8 +184,8 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error communicating with the backend:', error);
             updateStatus('Error: Cannot connect to the server. Check the console.', 'error');
         } finally {
-            // MODIFIED: Hide loader and enable button
-            loaderOverlay.style.display = 'none';
+            // MODIFIED: Hide progress bar and enable button
+            progressBarContainer.classList.add('hidden');
             processBtn.disabled = false;
         }
     });
