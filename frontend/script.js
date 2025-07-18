@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // === Map and layers initialization (remains the same) ===
+    // === Map and layers initialization ===
     const map = L.map('map').setView([49.795, 18.42], 12); // Havířov, Czech Republic
 
     const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     L.control.layers(baseMaps).addTo(map);
     L.control.scale().addTo(map);
 
-    // === Drawing on the map (remains the same) ===
+    // === Drawing on the map ===
     const drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
     const drawControl = new L.Control.Draw({
@@ -32,8 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // === Variables for new elements ===
-    let ndviChart = null; // The chart object will be stored here so we can destroy and redraw it
-    let activeMapLayers = []; // Here we'll remember which NDVI layers are on the map
+    let ndviChart = null;
+    let activeMapLayers = [];
     
     // === All HTML elements we will work with ===
     const processBtn = document.getElementById('processNdviBtn');
@@ -46,10 +46,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const slider = document.getElementById('layerSlider');
     const dateLabel = document.getElementById('sliderDateLabel');
     const legendContainer = document.getElementById('legendContainer');
+    const loaderOverlay = document.getElementById('loader-overlay'); // NEW: Get the loader element
 
     function updateStatus(message, type = '') {
         statusMessage.textContent = message;
-        statusMessage.className = type ? `status ${type}` : ''; // Adds class .success or .error
+        statusMessage.className = type ? `${type}` : ''; // Use just the type as class
     }
 
     // Setting default dates and limits
@@ -66,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === KEY FUNCTION: Listener for the "Process NDVI" button ===
     processBtn.addEventListener('click', async () => {
-        // Basic validation (if a polygon is drawn, etc.)
+        // Basic validation
         if (!currentPolygon) {
             updateStatus('Please draw a polygon on the map first.', 'error');
             return;
@@ -78,11 +79,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // We show the status and disable the button
-        updateStatus('Processing data, please wait... This might take up to a minute.', 'info');
+        // MODIFIED: Show loader and disable button
+        loaderOverlay.style.display = 'flex';
         processBtn.disabled = true;
+        updateStatus(''); // Clear previous status messages
         
-        // We hide old results
+        // Hide old results
         chartContainer.style.display = 'none';
         mapControlsContainer.style.display = 'none';
         
@@ -90,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const polygonCoords = geoJson.geometry.coordinates[0].map(coord => [coord[0], coord[1]]);
 
         try {
-            // We call our new backend
+            // We call our backend
             const response = await fetch('/process-ndvi', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -109,15 +111,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 drawnItems.clearLayers();
                 updateStatus(`Processing complete! Found ${result.imageLayers.length} images.`, 'success');
                 
-                // 1. We display the containers for the results
+                // 1. Display containers for the results
                 chartContainer.style.display = 'block';
                 mapControlsContainer.style.display = 'block';
 
-                // 2. We render the graph using Chart.js
+                // 2. Render the graph using Chart.js
                 const graphData = result.graphData.map(d => ({ x: d.date, y: d.value }));
                 const ctx = document.getElementById('ndviChart').getContext('2d');
                 if (ndviChart) {
-                    ndviChart.destroy(); // We destroy the old chart if it exists
+                    ndviChart.destroy();
                 }
                 ndviChart = new Chart(ctx, {
                     type: 'line',
@@ -140,32 +142,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
                 
-                // 3. We prepare and display the layers on the map
-                // First, we delete the old layers from the map
+                // 3. Prepare and display the layers on the map
                 activeMapLayers.forEach(layer => map.removeLayer(layer));
                 activeMapLayers = [];
 
                 const imageLayers = result.imageLayers;
                 slider.max = imageLayers.length - 1;
-                slider.value = imageLayers.length - 1; // By default, we show the newest image
+                slider.value = imageLayers.length - 1;
 
                 function showLayer(index) {
-                    // We remove the current layer from the map
                     activeMapLayers.forEach(layer => map.removeLayer(layer));
                     
                     const layerInfo = imageLayers[index];
                     if (layerInfo) {
                         const layer = L.imageOverlay(layerInfo.url, layerInfo.bounds, { opacity: 0.8 });
                         layer.addTo(map);
-                        activeMapLayers = [layer]; // We save it as the active layer
+                        activeMapLayers = [layer];
                         dateLabel.textContent = layerInfo.date;
                     }
                 }
                 
                 slider.addEventListener('input', (e) => showLayer(e.target.value));
-                showLayer(slider.value); // We display the first layer
+                showLayer(slider.value);
 
-                // 4. We generate the legend
+                // 4. Generate the legend
                 legendContainer.innerHTML = `
                     <strong>NDVI Legend</strong><br>
                     <div style="display: flex; align-items: center; margin-top: 5px; font-size: 0.8em;">
@@ -183,7 +183,9 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error communicating with the backend:', error);
             updateStatus('Error: Cannot connect to the server. Check the console.', 'error');
         } finally {
-            processBtn.disabled = false; // We enable the button again
+            // MODIFIED: Hide loader and enable button
+            loaderOverlay.style.display = 'none';
+            processBtn.disabled = false;
         }
     });
 });
