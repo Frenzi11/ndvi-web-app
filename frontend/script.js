@@ -86,13 +86,25 @@ document.addEventListener('DOMContentLoaded', () => {
             return container;
         },
         _findLocation: function () {
-            // Success callback
+             // Success callback
             const onLocationFound = (e) => {
-                const radius = e.accuracy / 2;
-                L.marker(e.latlng).addTo(map)
-                    .bindPopup(`You are within ${radius.toFixed(0)} meters from this point`).openPopup();
-                L.circle(e.latlng, radius).addTo(map);
-                map.flyTo(e.latlng, 14); // Fly to the location with a reasonable zoom
+                const radius = e.accuracy; // The radius of uncertainty in meters
+
+                // Create the marker and circle and store them in variables
+                const marker = L.marker(e.latlng).addTo(map);
+                const circle = L.circle(e.latlng, radius).addTo(map);
+
+                // Add popup to the marker
+                marker.bindPopup(`You are here (approx. ${radius.toFixed(0)}m accuracy)`).openPopup();
+                
+                // Fly to the location
+                map.flyTo(e.latlng, 14);
+
+                // NEW: Set a timer to remove the location markers after 3 seconds
+                setTimeout(() => {
+                    map.removeLayer(marker);
+                    map.removeLayer(circle);
+                }, 3000); // 3000 milliseconds = 3 seconds
             }
 
             // Error callback
