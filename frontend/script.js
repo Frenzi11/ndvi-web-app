@@ -31,11 +31,9 @@ document.addEventListener('DOMContentLoaded', () => {
         currentPolygon = event.layer;
     });
 
-    // === Variables for new elements ===
+    // === Variables and HTML elements ===
     let ndviChart = null;
     let activeMapLayers = [];
-    
-    // === All HTML elements we will work with ===
     const processBtn = document.getElementById('processNdviBtn');
     const statusMessage = document.getElementById('statusMessage');
     const startDateInput = document.getElementById('startDate');
@@ -46,12 +44,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const slider = document.getElementById('layerSlider');
     const dateLabel = document.getElementById('sliderDateLabel');
     const legendContainer = document.getElementById('legendContainer');
-    // MODIFIED: Get the new progress bar element instead of the old overlay
     const progressBarContainer = document.getElementById('progress-bar-container'); 
 
     function updateStatus(message, type = '') {
         statusMessage.textContent = message;
-        statusMessage.className = type ? `${type}` : ''; // Use just the type as class
+        statusMessage.className = type ? `${type}` : '';
     }
 
     // Setting default dates and limits
@@ -65,6 +62,59 @@ document.addEventListener('DOMContentLoaded', () => {
     startDateInput.max = today.toISOString().split('T')[0];
     endDateInput.max = today.toISOString().split('T')[0];
 
+    // NEW: --- 'Find My Location' Control ---
+    const LocationControl = L.Control.extend({
+        options: {
+            position: 'topleft' // You can change this to 'topright', 'bottomleft', etc.
+        },
+        onAdd: function (map) {
+            const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+            const button = L.DomUtil.create('a', 'location-control-button', container);
+            // SVG icon for the button (crosshair)
+            button.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+                </svg>`;
+            button.href = '#';
+            button.role = 'button';
+            button.ariaLabel = 'Find my location';
+
+            // Prevent map events when clicking the button
+            L.DomEvent.on(button, 'click', L.DomEvent.stop);
+            L.DomEvent.on(button, 'click', this._findLocation, this);
+
+            return container;
+        },
+        _findLocation: function () {
+            // Success callback
+            const onLocationFound = (e) => {
+                const radius = e.accuracy / 2;
+                L.marker(e.latlng).addTo(map)
+                    .bindPopup(`You are within ${radius.toFixed(0)} meters from this point`).openPopup();
+                L.circle(e.latlng, radius).addTo(map);
+                map.flyTo(e.latlng, 14); // Fly to the location with a reasonable zoom
+            }
+
+            // Error callback
+            const onLocationError = (err) => {
+                let message = 'Could not find your location.';
+                switch(err.code) {
+                    case 1: message = 'Permission to access location was denied.'; break;
+                    case 2: message = 'Location could not be determined.'; break;
+                    case 3: message = 'Location request timed out.'; break;
+                }
+                updateStatus(message, 'error');
+            }
+            
+            // Use Leaflet's built-in geolocator
+            map.locate({setView: false, maxZoom: 16})
+               .on('locationfound', onLocationFound)
+               .on('locationerror', onLocationError);
+        }
+    });
+
+    // Add the new control to the map
+    new LocationControl().addTo(map);
 
     // === KEY FUNCTION: Listener for the "Process NDVI" button ===
     processBtn.addEventListener('click', async () => {
@@ -80,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // MODIFIED: Show progress bar, disable button, and set info message
+        // Show progress bar, disable button, and set info message
         progressBarContainer.classList.remove('hidden');
         processBtn.disabled = true;
         updateStatus('Processing data, please wait...', 'info');
@@ -184,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error communicating with the backend:', error);
             updateStatus('Error: Cannot connect to the server. Check the console.', 'error');
         } finally {
-            // MODIFIED: Hide progress bar and enable button
+            // Hide progress bar and enable button
             progressBarContainer.classList.add('hidden');
             processBtn.disabled = false;
         }

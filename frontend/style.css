@@ -12,7 +12,7 @@ body {
 }
 
 .controls {
-    width: 350px; 
+    width: 450px; 
     padding: 20px;
     box-shadow: -2px 0 5px rgba(0,0,0,0.1);
     background-color: #f8f8f8;
@@ -152,4 +152,28 @@ button:disabled {
 @keyframes indeterminate-progress {
     from { background-position: -50% 0; }
     to { background-position: 150% 0; }
+}
+
+.location-control-button {
+    background-color: white;
+    width: 34px;
+    height: 34px;
+    border-radius: 4px;
+    border: 2px solid rgba(0,0,0,0.2);
+    background-clip: padding-box;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.location-control-button:hover {
+    background-color: #f4f4f4;
+}
+
+/* Style for the SVG icon inside the button */
+.location-control-button svg {
+    width: 20px;
+    height: 20px;
+    fill: #333;
 }
