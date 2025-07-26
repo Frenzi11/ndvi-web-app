@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dateLabel = document.getElementById('sliderDateLabel');
     const legendContainer = document.getElementById('legendContainer');
     const progressBarContainer = document.getElementById('progress-bar-container'); 
-    const downloadLinkContainer = document.getElementById('downloadLinkContainer'); // NEW: Get the container for the export button
+    const downloadLinkContainer = document.getElementById('downloadLinkContainer');
 
     function updateStatus(message, type = '') {
         statusMessage.textContent = message;
@@ -68,8 +68,14 @@ document.addEventListener('DOMContentLoaded', () => {
         onAdd: function (map) {
             const container = L.DomUtil.create('div', 'leaflet-control');
             const button = L.DomUtil.create('a', 'location-control-button', container);
-            button.innerHTML = `<svg>...</svg>`; // SVG content omitted for brevity
+            // FIXED: Full SVG code is now here
+            button.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+                </svg>`;
             button.href = '#';
+            button.role = 'button';
+            button.ariaLabel = 'Find my location';
             L.DomEvent.on(button, 'click', L.DomEvent.stop);
             L.DomEvent.on(button, 'click', this._findLocation, this);
             return container;
@@ -124,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
         downloadLinkContainer.innerHTML = ''; // Clear old export buttons
         
         const geoJson = currentPolygon.toGeoJSON();
-        const polygonCoords = geo.geometry.coordinates[0].map(coord => [coord[0], coord[1]]);
+        const polygonCoords = geoJson.geometry.coordinates[0].map(coord => [coord[0], coord[1]]);
 
         try {
             const response = await fetch('/process-ndvi', {
@@ -144,14 +150,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 drawnItems.clearLayers();
                 updateStatus(`Processing complete! Found ${result.imageLayers.length} images.`, 'success');
                 
-                // ... (kód pro zobrazení grafu a mapy zůstává stejný)
                 chartContainer.style.display = 'block';
                 mapControlsContainer.style.display = 'block';
 
                 const graphData = result.graphData.map(d => ({ x: d.date, y: d.value }));
                 const ctx = document.getElementById('ndviChart').getContext('2d');
-                if (ndviChart) ndviChart.destroy();
-                ndviChart = new Chart(ctx, { /* ... chart config ... */ });
+                if (ndviChart) {
+                    ndviChart.destroy();
+                }
+                ndviChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [{
+                            label: 'Average NDVI',
+                            data: graphData,
+                            borderColor: 'green',
+                            backgroundColor: 'rgba(0, 255, 0, 0.1)',
+                            tension: 0.1,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: { type: 'time', time: { unit: 'month', tooltipFormat: 'dd.MM.yyyy' } },
+                            y: { title: { display: true, text: 'NDVI' }, min: -0.2, max: 1.0 }
+                        },
+                        interaction: { intersect: false, mode: 'index' }
+                    }
+                });
                 
                 activeMapLayers.forEach(layer => map.removeLayer(layer));
                 activeMapLayers = [];
@@ -159,11 +185,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 slider.max = imageLayers.length - 1;
                 slider.value = imageLayers.length - 1;
 
-                function showLayer(index) { /* ... showLayer logic ... */ }
+                function showLayer(index) {
+                    activeMapLayers.forEach(layer => map.removeLayer(layer));
+                    const layerInfo = imageLayers[index];
+                    if (layerInfo) {
+                        const layer = L.imageOverlay(layerInfo.url, layerInfo.bounds, { opacity: 0.8 });
+                        layer.addTo(map);
+                        activeMapLayers = [layer];
+                        dateLabel.textContent = layerInfo.date;
+                    }
+                }
                 slider.addEventListener('input', (e) => showLayer(e.target.value));
                 showLayer(slider.value);
 
-                legendContainer.innerHTML = `<strong>NDVI Legend</strong>...`;
+                legendContainer.innerHTML = `
+                    <strong>NDVI Legend</strong><br>
+                    <div style="display: flex; align-items: center; margin-top: 5px; font-size: 0.8em;">
+                        <span>-0.2</span>
+                        <span style="background: linear-gradient(to right, #d73027, #ffffbf, #1a9850); flex-grow: 1; height: 15px; margin: 0 5px; border: 1px solid #666;"></span>
+                        <span>1.0</span>
+                    </div>
+                `;
 
                 // --- NEW: Create and show the Export to HTML button ---
                 const exportBtn = document.createElement('button');
@@ -171,18 +213,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 exportBtn.textContent = 'Export to HTML';
                 
                 exportBtn.onclick = () => {
-                    // Build the URL for the export endpoint with parameters
                     const params = new URLSearchParams({
                         startDate: startDateInput.value,
                         endDate: endDateInput.value,
                         frequency: frequencySelect.value,
-                        // Pass polygon as a URL-safe JSON string
                         polygon: JSON.stringify(polygonCoords) 
                     });
                     
                     const exportUrl = `/export-html?${params.toString()}`;
-                    
-                    // Open the URL in a new tab to trigger the download
                     window.open(exportUrl, '_blank');
                 };
                 downloadLinkContainer.appendChild(exportBtn);
