@@ -246,3 +246,14 @@ button:disabled {
         box-sizing: border-box; /* Ensure padding is included in width */
     }
 }
+
+/* --- NEW: Style for the Export Button --- */
+#exportBtn {
+    margin-top: 20px;
+    width: 100%;
+    background-color: #28a745; /* A different color to distinguish it */
+}
+
+#exportBtn:hover {
+    background-color: #218838;
+}

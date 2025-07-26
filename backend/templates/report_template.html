@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NDVI Analysis Report</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        h1, h2 { text-align: center; color: #333; }
+        .header { margin-bottom: 30px; }
+        .graph-container { text-align: center; margin-bottom: 40px; }
+        .graph-container img { max-width: 90%; border: 1px solid #ccc; }
+        .maps-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        .map-item {
+            width: 45%;
+            text-align: center;
+            border: 1px solid #ddd;
+            padding: 10px;
+            box-sizing: border-box;
+            page-break-inside: avoid; /* Prevents breaking inside an item when printing */
+        }
+        .map-item img { max-width: 100%; }
+        .legend-container { text-align: center; margin-top: 40px; }
+        .print-button {
+            display: block;
+            width: 150px;
+            margin: 20px auto;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        /* Styles for printing */
+        @media print {
+            .print-button { display: none; }
+            body { margin: 0; }
+            .map-item { border: 1px solid #aaa; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>NDVI Analysis Report</h1>
+        <p><strong>Period:</strong> {{ start_date }} to {{ end_date }}</p>
+        <p><strong>Frequency:</strong> {{ frequency }}</p>
+    </div>
+
+    <a href="javascript:window.print()" class="print-button">Print this Report</a>
+
+    <div class="graph-container">
+        <h2>NDVI Time Series</h2>
+        <img src="data:image/png;base64,{{ graph_base64 }}" alt="NDVI Time Series Graph">
+    </div>
+
+    <div class="legend-container">
+        <h2>Legend</h2>
+        <img src="data:image/png;base64,{{ legend_base64 }}" alt="NDVI Legend">
+    </div>
+
+    <div class="maps-grid">
+        {% for map_data in maps %}
+        <div class="map-item">
+            <h3>{{ map_data.date }}</h3>
+            <img src="data:image/png;base64,{{ map_data.src }}" alt="NDVI map for {{ map_data.date }}">
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
