@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     });
     const esriSatLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri &mdash; ...'
+        attribution: 'Tiles &copy; Esri &mdash; i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, and others'
     });
     
     osmLayer.addTo(map);
@@ -18,8 +18,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
     const drawControl = new L.Control.Draw({
-        draw: { polyline: false, marker: false, circlemarker: false, circle: false, rectangle: false, 
-            polygon: { allowIntersection: false, showArea: true, shapeOptions: { color: '#3388ff' } }
+        draw: { 
+            polyline: false, 
+            marker: false, 
+            circlemarker: false, 
+            circle: false, 
+            rectangle: false, 
+            polygon: { 
+                allowIntersection: false, 
+                showArea: true, 
+                shapeOptions: { color: '#3388ff' } 
+            } 
         }
     });
     map.addControl(drawControl);
@@ -45,7 +54,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const legendContainer = document.getElementById('legendContainer');
     const progressBarContainer = document.getElementById('progress-bar-container'); 
     const downloadLinkContainer = document.getElementById('downloadLinkContainer');
-    // NEW: Get opacity slider elements
     const opacitySlider = document.getElementById('opacitySlider');
     const opacityValueLabel = document.getElementById('opacityValueLabel');
 
@@ -67,7 +75,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 'Find My Location' Control ---
     const LocationControl = L.Control.extend({
-        options: { position: 'topleft' },
+        options: {
+            position: 'topleft'
+        },
         onAdd: function (map) {
             const container = L.DomUtil.create('div', 'leaflet-control');
             const button = L.DomUtil.create('a', 'location-control-button', container);
@@ -78,20 +88,46 @@ document.addEventListener('DOMContentLoaded', () => {
             button.href = '#';
             button.role = 'button';
             button.ariaLabel = 'Find my location';
+
             L.DomEvent.on(button, 'click', L.DomEvent.stop);
             L.DomEvent.on(button, 'click', this._findLocation, this);
+
             return container;
         },
-        _findLocation: function () { /* ... kód pro lokaci ... */ }
+        _findLocation: function () {
+            const onLocationFound = (e) => {
+                const radius = e.accuracy;
+                const marker = L.marker(e.latlng).addTo(map);
+                const circle = L.circle(e.latlng, radius).addTo(map);
+                marker.bindPopup(`You are here (approx. ${radius.toFixed(0)}m accuracy)`).openPopup();
+                map.flyTo(e.latlng, 14);
+                setTimeout(() => {
+                    map.removeLayer(marker);
+                    map.removeLayer(circle);
+                }, 3000);
+            }
+
+            const onLocationError = (err) => {
+                let message = 'Could not find your location.';
+                switch(err.code) {
+                    case 1: message = 'Permission to access location was denied.'; break;
+                    case 2: message = 'Location could not be determined.'; break;
+                    case 3: message = 'Location request timed out.'; break;
+                }
+                updateStatus(message, 'error');
+            }
+
+            map.locate({setView: false, maxZoom: 16})
+               .on('locationfound', onLocationFound)
+               .on('locationerror', onLocationError);
+        }
     });
     new LocationControl().addTo(map);
-
-    // NEW: --- Opacity Slider Logic ---
+    
+    // --- Opacity Slider Logic ---
     opacitySlider.addEventListener('input', (e) => {
         const newOpacity = e.target.value;
-        // Update the label to show the percentage
         opacityValueLabel.textContent = `${Math.round(newOpacity * 100)}%`;
-        // If there is an active layer on the map, change its opacity
         if (activeMapLayers.length > 0 && activeMapLayers[0]) {
             activeMapLayers[0].setOpacity(newOpacity);
         }
@@ -99,7 +135,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === KEY FUNCTION: Listener for the "Process NDVI" button ===
     processBtn.addEventListener('click', async () => {
-        if (!currentPolygon) { /* ... validace ... */ return; }
+        if (!currentPolygon) {
+            updateStatus('Please draw a polygon on the map first.', 'error');
+            return;
+        }
+        const startDate = startDateInput.value;
+        const endDate = endDateInput.value;
+        if (!startDate || !endDate || new Date(startDate) > new Date(endDate)) {
+            updateStatus('Please enter valid dates (From <= To).', 'error');
+            return;
+        }
         
         progressBarContainer.classList.remove('hidden');
         processBtn.disabled = true;
@@ -113,7 +158,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const polygonCoords = geoJson.geometry.coordinates[0].map(coord => [coord[0], coord[1]]);
 
         try {
-            const response = await fetch('/process-ndvi', { /* ... fetch ... */ });
+            const response = await fetch('/process-ndvi', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    polygon: polygonCoords,
+                    startDate: startDate,
+                    endDate: endDate,
+                    frequency: frequencySelect.value
+                })
+            });
+
             const result = await response.json();
 
             if (response.ok) {
@@ -128,9 +183,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (ndviChart) {
                     ndviChart.destroy();
                 }
-                ndviChart = new Chart(ctx, { /* ... chart config ... */ });
+                ndviChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [{
+                            label: 'Average NDVI',
+                            data: graphData,
+                            borderColor: 'green',
+                            backgroundColor: 'rgba(0, 255, 0, 0.1)',
+                            tension: 0.1,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: { type: 'time', time: { unit: 'month', tooltipFormat: 'dd.MM.yyyy' } },
+                            y: { title: { display: true, text: 'NDVI' }, min: -0.2, max: 1.0 }
+                        },
+                        interaction: { intersect: false, mode: 'index' }
+                    }
+                });
                 
-                // --- MODIFICATION: The 'showLayer' function now uses the opacity slider's value ---
                 activeMapLayers.forEach(layer => map.removeLayer(layer));
                 activeMapLayers = [];
                 const imageLayers = result.imageLayers;
@@ -141,7 +214,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     activeMapLayers.forEach(layer => map.removeLayer(layer));
                     const layerInfo = imageLayers[index];
                     if (layerInfo) {
-                        // MODIFIED: Read the current opacity from the slider when creating the layer
                         const layer = L.imageOverlay(layerInfo.url, layerInfo.bounds, { 
                             opacity: opacitySlider.value 
                         });
@@ -152,15 +224,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 slider.addEventListener('input', (e) => showLayer(e.target.value));
-                showLayer(slider.value); // Display the first layer
+                showLayer(slider.value);
 
-                legendContainer.innerHTML = `<strong>NDVI Legend</strong>...`;
+                legendContainer.innerHTML = `
+                    <strong>NDVI Legend</strong><br>
+                    <div style="display: flex; align-items: center; margin-top: 5px; font-size: 0.8em;">
+                        <span>-0.2</span>
+                        <span style="background: linear-gradient(to right, #d73027, #ffffbf, #1a9850); flex-grow: 1; height: 15px; margin: 0 5px; border: 1px solid #666;"></span>
+                        <span>1.0</span>
+                    </div>
+                `;
 
-                // --- Export to HTML button logic ---
                 const exportBtn = document.createElement('button');
                 exportBtn.id = 'exportBtn';
                 exportBtn.textContent = 'Export to HTML';
-                exportBtn.onclick = () => { /* ... export logic ... */ };
+                
+                exportBtn.onclick = () => {
+                    const params = new URLSearchParams({
+                        startDate: startDateInput.value,
+                        endDate: endDateInput.value,
+                        frequency: frequencySelect.value,
+                        polygon: JSON.stringify(polygonCoords) 
+                    });
+                    
+                    const exportUrl = `/export-html?${params.toString()}`;
+                    window.open(exportUrl, '_blank');
+                };
                 downloadLinkContainer.appendChild(exportBtn);
 
             } else {
