@@ -257,3 +257,7 @@ button:disabled {
 #exportBtn:hover {
     background-color: #218838;
 }
+
+#opacitySlider {
+    width: 100%;
+}
