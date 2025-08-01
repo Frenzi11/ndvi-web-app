@@ -11,7 +11,7 @@ A full-stack web application for analyzing the health of agricultural fields and
 
 This project was built to make agricultural remote sensing accessible to everyone. Traditional GIS software can be complex and expensive. The NDVI Field Analyzer provides a simple, web-based solution for farmers, agronomists, researchers, and students to monitor vegetation health without needing specialized tools.
 
-The application allows users to draw a polygon over any area of interest on a world map, select a date range, and receive a detailed analysis including an interactive time-series graph and browsable NDVI maps for each available satellite image in that period.
+The application allows users to draw a polygon over any area of interest on a world map and select a date range to receive a detailed and highly accurate analysis. It **intelligently filters out cloudy images by analyzing cloud cover directly inside the selected area**, ensuring the resulting data is as clean and reliable as possible.
 
 ---
 
@@ -19,12 +19,13 @@ The application allows users to draw a polygon over any area of interest on a wo
 
 * **Interactive Map Interface:** Uses Leaflet.js for a smooth map experience.
 * **Polygon Drawing Tool:** Users can define their exact area of interest.
-* **Time-Series Analysis:** Generates an interactive chart showing the average NDVI value over the selected period.
+* **Advanced Cloud Detection:** Utilizes the Sentinel-2 L2A Scene Classification Layer (SCL) to precisely calculate cloud coverage **within the user-defined polygon**. This process discards images where the area of interest is obscured by clouds or their shadows, leading to much more accurate results.
+* **Reliable Time-Series Analysis:** Generates an interactive chart showing the average NDVI value over time. The analysis is highly reliable thanks to the advanced cloud filtering.
 * **Visual Map Overlays:** Displays generated NDVI maps directly on the satellite imagery.
 * **Image Slider:** Easily switch between NDVI maps from different dates.
 * **Opacity Control:** Adjust the transparency of the NDVI layer to compare it with the underlying satellite map.
 * **Find My Location:** A convenient button to quickly navigate to the user's current location.
-* **Responsive Design:** Fully functional on both desktop and mobile devices.
+* [cite_start]**Responsive Design:** Fully functional on both desktop and mobile devices. [cite: 1]
 * **HTML Report Export:** Users can export the complete analysis (graph and all maps) into a single, self-contained, and printable HTML file.
 
 ---
@@ -35,21 +36,21 @@ This project is built with a modern, full-stack approach:
 
 * **Backend:**
     * **Python 3.11**
-    * **Flask:** A lightweight web framework for the backend server and API.
-    * **Gunicorn:** A production-ready WSGI server.
-    * **SentinelHub API:** The `sentinelhub-py` library to search and download satellite data from the Copernicus Data Space Ecosystem.
-    * **NumPy & Rasterio:** For efficient processing of satellite raster data and NDVI calculation.
+    * [cite_start]**Flask:** A lightweight web framework for the backend server and API. [cite: 1]
+    * [cite_start]**Gunicorn:** A production-ready WSGI server. [cite: 1]
+    * **SentinelHub API:** The `sentinelhub-py` library to search and download **Sentinel-2 L2A** satellite data from the Copernicus Data Space Ecosystem.
+    * [cite_start]**NumPy & Rasterio:** For efficient processing of satellite raster data and NDVI calculation. [cite: 1]
     * **Matplotlib:** For generating the time-series graph and map images.
-    * **Shapely:** For geospatial calculations like polygon area.
+    * [cite_start]**Shapely:** For geospatial calculations like polygon area. [cite: 1]
 
 * **Frontend:**
     * **HTML5, CSS3, Vanilla JavaScript (ES6+)**
-    * **Leaflet.js:** An open-source library for interactive maps.
-    * **Leaflet.Draw:** A plugin for drawing polygons.
-    * **Chart.js:** For creating beautiful and interactive charts.
+    * [cite_start]**Leaflet.js:** An open-source library for interactive maps. [cite: 1]
+    * [cite_start]**Leaflet.Draw:** A plugin for drawing polygons. [cite: 1]
+    * [cite_start]**Chart.js:** For creating beautiful and interactive charts. [cite: 1]
 
 * **Deployment:**
-    * **Render:** A cloud platform for deploying the full-stack application.
+    * [cite_start]**Render:** A cloud platform for deploying the full-stack application. [cite: 1]
     * **Git & GitHub:** For version control and continuous deployment.
 
 ---
@@ -60,9 +61,9 @@ To get a local copy up and running, follow these simple steps.
 
 ### Prerequisites
 
-* Python 3.9+
+* Python 3.11+
 * pip (Python package installer)
-* A free account on the [Copernicus Data Space Ecosystem](https://dataspace.copernicus.eu/) to get API credentials.
+* [cite_start]A free account on the [Copernicus Data Space Ecosystem](https://dataspace.copernicus.eu/) to get API credentials. [cite: 1]
 
 ### Installation & Setup
 
@@ -81,8 +82,8 @@ To get a local copy up and running, follow these simple steps.
     pip install -r requirements.txt
     ```
 4.  **Set up environment variables**
-    * Create a file named `.env` inside the `backend` folder.
-    * Add your Copernicus API credentials to it:
+    * [cite_start]Create a file named `.env` inside the `backend` folder. [cite: 1]
+    * [cite_start]Add your Copernicus API credentials to it: [cite: 1]
         ```
         CDSE_CLIENT_ID='your-client-id-goes-here'
         CDSE_CLIENT_SECRET='your-client-secret-goes-here'
@@ -99,4 +100,4 @@ To get a local copy up and running, follow these simple steps.
 
 ## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the MIT License. [cite_start]See `LICENSE` for more information. [cite: 1]
