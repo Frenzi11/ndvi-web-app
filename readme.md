@@ -25,7 +25,7 @@ The application allows users to draw a polygon over any area of interest on a wo
 * **Image Slider:** Easily switch between NDVI maps from different dates.
 * **Opacity Control:** Adjust the transparency of the NDVI layer to compare it with the underlying satellite map.
 * **Find My Location:** A convenient button to quickly navigate to the user's current location.
-* [cite_start]**Responsive Design:** Fully functional on both desktop and mobile devices. [cite: 1]
+* **Responsive Design:** Fully functional on both desktop and mobile devices.
 * **HTML Report Export:** Users can export the complete analysis (graph and all maps) into a single, self-contained, and printable HTML file.
 
 ---
@@ -36,21 +36,21 @@ This project is built with a modern, full-stack approach:
 
 * **Backend:**
     * **Python 3.11**
-    * [cite_start]**Flask:** A lightweight web framework for the backend server and API. [cite: 1]
-    * [cite_start]**Gunicorn:** A production-ready WSGI server. [cite: 1]
+    * **Flask:** A lightweight web framework for the backend server and API.
+    * **Gunicorn:** A production-ready WSGI server.
     * **SentinelHub API:** The `sentinelhub-py` library to search and download **Sentinel-2 L2A** satellite data from the Copernicus Data Space Ecosystem.
-    * [cite_start]**NumPy & Rasterio:** For efficient processing of satellite raster data and NDVI calculation. [cite: 1]
+    * **NumPy & Rasterio:** For efficient processing of satellite raster data and NDVI calculation.
     * **Matplotlib:** For generating the time-series graph and map images.
-    * [cite_start]**Shapely:** For geospatial calculations like polygon area. [cite: 1]
+    * **Shapely:** For geospatial calculations like polygon area.
 
 * **Frontend:**
     * **HTML5, CSS3, Vanilla JavaScript (ES6+)**
-    * [cite_start]**Leaflet.js:** An open-source library for interactive maps. [cite: 1]
-    * [cite_start]**Leaflet.Draw:** A plugin for drawing polygons. [cite: 1]
-    * [cite_start]**Chart.js:** For creating beautiful and interactive charts. [cite: 1]
+    * **Leaflet.js:** An open-source library for interactive maps.
+    * **Leaflet.Draw:** A plugin for drawing polygons.
+    * **Chart.js:** For creating beautiful and interactive charts.
 
 * **Deployment:**
-    * [cite_start]**Render:** A cloud platform for deploying the full-stack application. [cite: 1]
+    * **Render:** A cloud platform for deploying the full-stack application.
     * **Git & GitHub:** For version control and continuous deployment.
 
 ---
@@ -63,8 +63,8 @@ To get a local copy up and running, follow these simple steps.
 
 * Python 3.11+
 * pip (Python package installer)
-* [cite_start]A free account on the [Copernicus Data Space Ecosystem](https://dataspace.copernicus.eu/) to get API credentials. [cite: 1]
-
+* A free account on the [Copernicus Data Space Ecosystem](https://dataspace.copernicus.eu/) to get API credentials.
+  
 ### Installation & Setup
 
 1.  **Clone the repo**
@@ -82,8 +82,8 @@ To get a local copy up and running, follow these simple steps.
     pip install -r requirements.txt
     ```
 4.  **Set up environment variables**
-    * [cite_start]Create a file named `.env` inside the `backend` folder. [cite: 1]
-    * [cite_start]Add your Copernicus API credentials to it: [cite: 1]
+    * Create a file named `.env` inside the `backend` folder.
+    * Add your Copernicus API credentials to it:
         ```
         CDSE_CLIENT_ID='your-client-id-goes-here'
         CDSE_CLIENT_SECRET='your-client-secret-goes-here'
@@ -100,4 +100,4 @@ To get a local copy up and running, follow these simple steps.
 
 ## License
 
-Distributed under the MIT License. [cite_start]See `LICENSE` for more information. [cite: 1]
+Distributed under the MIT License. See `LICENSE` for more information.
