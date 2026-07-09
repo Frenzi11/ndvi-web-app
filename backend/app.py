@@ -62,11 +62,10 @@ def handle_process_ndvi():
         return jsonify({"error": f"An unexpected error occurred: {str(e)}"}), 500
 
 
-# --- NEW: Endpoint for exporting HTML report ---
+# --- Endpoint for exporting HTML report ---
 @app.route('/export-html')
 def export_html_report():
     try:
-        # Get parameters from URL query string
         start_date = request.args.get('startDate')
         end_date = request.args.get('endDate')
         frequency = request.args.get('frequency')
@@ -79,7 +78,6 @@ def export_html_report():
         polygon = json.loads(polygon_str)
 
         # Re-run the processing to get the data and generate images
-        # Note: In a production app, you might cache this result to avoid re-processing.
         result_data = process_ndvi(
             polygon_coords=polygon,
             start_date_str=start_date,
@@ -95,15 +93,12 @@ def export_html_report():
             with open(file_path, "rb") as f:
                 return base64.b64encode(f.read()).decode('utf-8')
 
-        # The graph and legend are part of the main result now
         graph_base64 = to_base64(result_data['graphPngPath'])
         legend_base64 = to_base64(result_data['legendPngPath'])
 
         # Prepare map data for the template
         maps_data_for_template = []
         for layer in result_data['imageLayers']:
-            # layer['url'] is like '/output/ndvi_map_2025-07-25...png'
-            # We need the full file system path.
             image_filename = os.path.basename(layer['url'])
             image_filepath = os.path.join(OUTPUT_FOLDER, image_filename)
             maps_data_for_template.append({
@@ -111,7 +106,7 @@ def export_html_report():
                 'src': to_base64(image_filepath)
             })
         
-        # Render the HTML template with our data
+        # Render the HTML template
         html_report = render_template('report_template.html', 
                                       start_date=start_date,
                                       end_date=end_date,
