@@ -21,7 +21,7 @@
             border: 1px solid #ddd;
             padding: 10px;
             box-sizing: border-box;
-            page-break-inside: avoid; /* Prevents breaking inside an item when printing */
+            page-break-inside: avoid;
         }
         .map-item img { max-width: 100%; }
         .legend-container { text-align: center; margin-top: 40px; }
@@ -36,7 +36,7 @@
             text-decoration: none;
             border-radius: 5px;
         }
-        /* Styles for printing */
+        
         @media print {
             .print-button { display: none; }
             body { margin: 0; }
