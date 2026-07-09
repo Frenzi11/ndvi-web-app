@@ -12,13 +12,11 @@ from shapely.geometry import Polygon
 import math
 import sys
 
-# Matplotlib is still needed for generating PNG images
 import matplotlib
-matplotlib.use('Agg') # Setting the non-interactive backend is still important for the server
+matplotlib.use('Agg') # Setting the non-interactive backend
 import matplotlib.pyplot as plt
 import matplotlib.colorbar
 
-# From rasterio, we need transform for georeferencing images
 from rasterio.transform import from_bounds
 
 # Logging setup
@@ -61,7 +59,7 @@ DataCollection.define(
 )
 S2_L2A_CDSE_CUSTOM = DataCollection.SENTINEL2_L2A_CDSE_CUSTOM
 
-# ----- FUNCTION FOR AREA CALCULATION (remains unchanged) -----
+# ----- FUNCTION FOR AREA CALCULATION -----
 def calculate_polygon_area_sqkm(polygon_coords: list) -> float:
     """
     Calculates the approximate area of a polygon in km^2.
@@ -87,8 +85,7 @@ def calculate_polygon_area_sqkm(polygon_coords: list) -> float:
         logging.error(f"Error calculating area of approximated polygon: {e}")
         return 0.0
 
-# ----- MAIN PROCESSING FUNCTION -----
-# Replace the original process_ndvi function entirely
+# MAIN PROCESSING FUNCTION 
 def process_ndvi(
     polygon_coords: list,
     start_date_str: str,
@@ -96,14 +93,14 @@ def process_ndvi(
     frequency: str,
     max_images_to_consider: int = 30,
     max_polygon_area_sqkm: float = 25.0,
-    max_cloud_coverage_in_polygon: float = 0.5 # New parameter: max 50% cloud coverage within the polygon
+    max_cloud_coverage_in_polygon: float = 0.5 
 ) -> dict | None:
     """
     Processes NDVI for a given polygon and time period. For each time interval, it finds the best
     image based on CLOUD COVERAGE WITHIN THE POLYGON, generates a PNG image of the NDVI map, 
     and returns structured data.
     """
-    # NEW EVALSCRIPT: Fetches B04(RED), B08(NIR), and importantly, SCL (Scene Classification Layer)
+    # Fetches B04(RED), B08(NIR), and importantly, SCL (Scene Classification Layer)
     evalscript_all_data = """
         //VERSION=3
         function setup() {
@@ -135,7 +132,6 @@ def process_ndvi(
 
     logging.info(f"Starting NDVI processing for polygon, from {start_date_str} to {end_date_str}, frequency: {frequency}")
     
-    # --- The rest of the function up to the loop remains the same (validation, bbox prep, etc.) ---
     area = calculate_polygon_area_sqkm(polygon_coords)
     if area > max_polygon_area_sqkm:
         raise ValueError(f"Polygon area ({area:.2f} km²) exceeds the maximum allowed size ({max_polygon_area_sqkm} km²).")
@@ -176,7 +172,6 @@ def process_ndvi(
     cmap = plt.cm.RdYlGn
     norm = plt.Normalize(vmin=-0.2, vmax=1.0)
 
-    # === THE MAIN LOGIC CHANGE IS HERE ===
     for ts_start_str, ts_end_str in time_series_intervals:
         logging.info(f"Searching for images for the interval: {ts_start_str} to {ts_end_str}")
         # We search in L2A data, without a strict cloud filter
@@ -280,7 +275,6 @@ def process_ndvi(
                 "mean_ndvi": round(mean_ndvi, 4)
             })
 
-    # --- The rest of the function (graph/legend generation, return value) remains the same ---
     if not image_layers_for_map:
         logging.warning("Processing finished, but no map layers were generated.")
         return None
