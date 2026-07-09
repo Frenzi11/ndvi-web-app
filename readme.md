@@ -1,49 +1,24 @@
-# Geospatial Analysis: NDVI Field Explorer 🛰️
-
-A professional demonstration project focusing on **Remote Sensing (RS)** and **Geospatial Data Science**. This full-stack application serves as a practical implementation of satellite imagery processing, specifically designed for monitoring vegetation health (NDVI) using **Sentinel-2 L2A** (Bottom-of-Atmosphere) data.
+# NDVI Field Analyzer 🛰️
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20App-brightgreen)](https://ndvi-field-analyzer.onrender.com) 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
----
+## 📌 What it is
+A full-stack geospatial web application that allows users to draw a polygon on an interactive map and generate a time-series analysis of vegetation health (NDVI) using **Sentinel-2 L2A** satellite imagery. 
 
-## 🎓 Academic & Professional Context
+## 🛠️ Tech Stack
+* **Backend:** Python 3.11, Flask, SentinelHub API (Copernicus Data Space Ecosystem)
+* **Geospatial Processing:** Rasterio, Shapely, NumPy, Matplotlib
+* **Frontend:** Vanilla JavaScript, HTML5/CSS3, Leaflet.js, Chart.js
 
-This project was developed to demonstrate advanced workflows in **Geoinformatics** and **Earth Observation**. The primary goal was to bridge the gap between raw satellite data acquisition and meaningful spatio-temporal analysis through a custom-built web interface.
+## 🚀 Key Technical Features
+* **Smart Cloud Filtering:** Instead of rejecting whole satellite scenes, the algorithm uses the Scene Classification Layer (SCL) to calculate cloud coverage *strictly within the user-defined polygon*. 
+* **Automated Data Pipeline:** Fetches multi-spectral bands (B04, B08, SCL, dataMask) from the Copernicus Data Space Ecosystem via custom evalscripts.
+* **On-the-Fly Processing:** Calculates NDVI arrays, applies data masks to filter out invalid/cloudy pixels, and generates transparent, georeferenced PNG overlays.
+* **Interactive UI:** Features map drawing tools, a time-series chart synchronized with map layers, opacity controls, and a custom geolocation tool.
+* **Portable Reports:** Users can export their analysis (including base64-encoded graphs and map layers) into a standalone, downloadable HTML report.
 
-### Key Analytical Concepts Implemented:
-* **Radiometric Processing:** Integration with the Copernicus Data Space Ecosystem to fetch Sentinel-2 L2A products.
-* **Vegetation Indices:** Automated calculation of the **Normalized Difference Vegetation Index (NDVI)** to assess biomass and plant vigor.
-* **Spatio-Temporal Filtering:** Advanced cloud detection using the **Scene Classification Layer (SCL)**. The algorithm performs a spatial intersection check to filter out cloudy pixels specifically within the user-defined area of interest (AOI).
-
----
-
-## 🛠️ Tech Stack & Skills Demonstrated
-
-The architecture reflects a modern **Geospatial Engineering** approach:
-
-* **Geospatial Backend (Python 3.11):**
-    * **SentinelHub API:** Automated data retrieval from Copernicus services.
-    * **Rasterio & NumPy:** Efficient processing of multi-spectral raster arrays.
-    * **Shapely:** Geometric operations and AOI polygon processing.
-    * **Flask:** RESTful API development for geospatial data delivery.
-* **Frontend / GIS Visualization:**
-    * **Leaflet.js:** Interactive mapping and vector data handling (drawing tools).
-    * **Chart.js:** Dynamic visualization of time-series vegetation trends.
-
----
-
-## 🚀 Key Features
-
-* **Polygon-Based Analysis:** Allows users to define precise AOIs for targeted spatial queries.
-* **Intelligent Data Cleaning:** Automated rejection of low-quality images based on local cloud coverage within the AOI.
-* **Interactive Time-Series:** Visualizing seasonal changes in vegetation health over a selected period.
-* **Multi-Layer Visualization:** Seamless overlay of NDVI rasters with adjustable opacity over base maps.
-* **Report Generation:** Exporting analytical results into a portable HTML format for documentation.
-
----
-
-## ⚙️ Getting Started (Local Development)
+## ⚙️ Quick Start (Local Development)
 
 ### Prerequisites
 * Python 3.11+
