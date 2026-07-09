@@ -165,7 +165,7 @@ button:disabled {
     align-items: center;
 
     border-radius: 4px;
-    box-shadow: 0 1px 5px rgba(0,0,0,0.65); /* A bit nicer shadow */
+    box-shadow: 0 1px 5px rgba(0,0,0,0.65);
     cursor: pointer;
     text-align: center;
     text-decoration: none;
@@ -183,14 +183,13 @@ button:disabled {
 }
 
 .leaflet-control-zoom {
-    border: none !important; /* Remove the default container border */
+    border: none !important;
     display: flex;
     flex-direction: column;
-    gap: 8px; /* This creates a nice space between the + and - buttons */
+    gap: 8px;
 }
 
 /* 2. Unified style for ALL control buttons */
-/* We target zoom buttons AND all links inside the draw toolbar */
 .leaflet-control-zoom-in,
 .leaflet-control-zoom-out,
 .leaflet-draw-toolbar a {
@@ -204,7 +203,6 @@ button:disabled {
 }
 
 /* 3. Resetting the container for the draw buttons */
-/* This ensures the shadow is applied to the button, not its container */
 .leaflet-draw-toolbar {
     border: none !important;
     background: transparent !important;
@@ -218,8 +216,6 @@ button:disabled {
     background-color: #f4f4f4 !important;
 }
 
-/* --- NEW: Responsive Design for Mobile Devices --- */
-
 /* This rule applies only when the screen width is 800px or less */
 @media (max-width: 800px) {
 
@@ -231,27 +227,27 @@ button:disabled {
 
     /* Make the map take up a portion of the screen height */
     #map {
-        height: 60vh; /* 60% of the viewport height */
+        height: 60vh; 
         width: 100%;
-        flex-grow: 0; /* Disable flex-grow */
+        flex-grow: 0; 
     }
 
     /* Make the controls panel take up full width */
     .controls {
         width: 100%;
-        height: auto; /* Height will be based on content */
-        max-height: none; /* Remove any max-height limits */
-        box-shadow: 0 -2px 5px rgba(0,0,0,0.1); /* Shadow on top now */
-        overflow-y: visible; /* Disable internal scrolling */
-        box-sizing: border-box; /* Ensure padding is included in width */
+        height: auto; 
+        max-height: none; 
+        box-shadow: 0 -2px 5px rgba(0,0,0,0.1); 
+        overflow-y: visible; 
+        box-sizing: border-box; 
     }
 }
 
-/* --- NEW: Style for the Export Button --- */
+/* Style for the Export Button */
 #exportBtn {
     margin-top: 20px;
     width: 100%;
-    background-color: #28a745; /* A different color to distinguish it */
+    background-color: #28a745;
 }
 
 #exportBtn:hover {
